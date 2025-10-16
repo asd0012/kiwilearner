@@ -5,6 +5,9 @@
 
 set -e
 
+# Ensure run from the repo root
+cd "$(dirname "$(realpath "$0")")"
+
 # Define paths
 export MOODLE_DOCKER_WWWROOT="$(pwd)/moodle"
 export MOODLE_DOCKER_DB=mariadb
@@ -19,6 +22,9 @@ cd moodle-docker
 echo "Starting Moodle-Docker environment..."
 bin/moodle-docker-compose up -d
 bin/moodle-docker-wait-for-db
+
+# copy config file
+cp config.docker-template.php $MOODLE_DOCKER_WWWROOT/config.php
 
 # Check if Moodle already installed
 if ! bin/moodle-docker-compose exec webserver php admin/cli/checks.php >/dev/null 2>&1; then
