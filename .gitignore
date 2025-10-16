@@ -1,0 +1,10 @@
+# Ignore Docker runtime data
+moodle-docker/.env
+moodle-docker/local.yml
+moodle-docker/docker-compose.override.yml
+moodle-docker/vendor/
+moodle-docker/node_modules/
+
+# Ignore Moodle data files
+moodle/config.php
+moodle/moodledata/
