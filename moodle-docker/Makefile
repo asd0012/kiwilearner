@@ -1,4 +1,4 @@
-HELL := /bin/bash
+SHELL := /bin/bash
 
 # --- env for the wrapper ---
 export MOODLE_DOCKER_WWWROOT := $(HOME)/kiwilearner/moodle
@@ -10,27 +10,26 @@ DC := ./bin/moodle-docker-compose
 .PHONY: up down restart logs ps open clean nuke
 
 up:
-        $(DC) up -d
+	$(DC) up -d
 
 down:
-        $(DC) down
+	$(DC) down
 
 restart: down up
 
 logs:
-        $(DC) logs -f
+	$(DC) logs -f
 
 ps:
-        docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+	docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
 open:
-        xdg-open http://localhost:$(MOODLE_DOCKER_WEB_PORT) || true
+	xdg-open http://localhost:$(MOODLE_DOCKER_WEB_PORT) || true
 
 # careful: clean/nuke remove volumes (DB/files)
 clean:
-        $(DC) down -v
+	$(DC) down -v
 
 nuke:
-        $(DC) down -v || true
-        docker volume prune -f
-
+	$(DC) down -v || true
+	docker volume prune -f
