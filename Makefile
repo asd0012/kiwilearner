@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 # --- env for the wrapper ---
-export MOODLE_DOCKER_WWWROOT := $(HOME)/kiwilearner/moodle
+export MOODLE_DOCKER_WWWROOT := "$(pwd)/moodle"
 export MOODLE_DOCKER_DB      := mariadb
 export MOODLE_DOCKER_WEB_PORT := 8000
 
