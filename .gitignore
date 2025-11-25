@@ -5,6 +5,23 @@ moodle-docker/docker-compose.override.yml
 moodle-docker/vendor/
 moodle-docker/node_modules/
 
+# ---- Runtime / container outputs (don’t commit) ----
+moodle/public/**
+moodle/local/**
+moodle-docker/test_files/**
+moodle-docker/**/moodledata/
+moodle-docker/**/dbdata/
+moodle-docker/Makefile.swp
+
+# third-party plugins you installed for testing (XP, etc.)
+moodle/public/blocks/**
+moodle/blocks/**
+
+# editors / OS junk
+*.swp
+*.swo
+*.DS_Store
+
 # Ignore Moodle data files
 moodle/config.php
 moodle/moodledata/
