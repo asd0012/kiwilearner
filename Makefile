@@ -1,11 +1,11 @@
 SHELL := /bin/bash
 
 # --- env for the wrapper ---
-export MOODLE_DOCKER_WWWROOT := "$(pwd)/moodle"
+export MOODLE_DOCKER_WWWROOT := $(CURDIR)/moodle
 export MOODLE_DOCKER_DB      := mariadb
 export MOODLE_DOCKER_WEB_PORT := 8000
 
-DC := ./bin/moodle-docker-compose
+DC := ./moodle-docker/bin/moodle-docker-compose
 
 .PHONY: up down restart logs ps open clean nuke
 
