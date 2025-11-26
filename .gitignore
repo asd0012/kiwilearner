@@ -13,6 +13,10 @@ moodle-docker/**/moodledata/
 moodle-docker/**/dbdata/
 moodle-docker/Makefile.swp
 
+# BUT keep our plugin tracked
+!moodle/local/kiwilearner/
+!moodle/local/kiwilearner/**
+
 # third-party plugins you installed for testing (XP, etc.)
 moodle/public/blocks/**
 moodle/blocks/**
