@@ -1,26 +1,22 @@
 <?php
+declare(strict_types=1);
+
 namespace local_kiwilearner\external;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/externallib.php');
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_value;
 
-use external_api;
-use external_function_parameters;
-use external_single_structure;
-use external_value;
-use local_kiwilearner\goal;
-
-class get_daily_goal extends external_api {
+final class get_daily_goal extends external_api {
     public static function execute_parameters(): external_function_parameters {
-        return new external_function_parameters([]); // no params for GET
+        return new external_function_parameters([]);
     }
 
     public static function execute(): array {
         global $USER, $DB;
-
-        // validate (even if empty – Moodle convention)
-        self::validate_parameters(self::execute_parameters(), []);
 
         $rec = $DB->get_record('local_kiwilearner_goal', ['userid' => $USER->id], '*', IGNORE_MISSING);
 
