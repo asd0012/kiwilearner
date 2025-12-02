@@ -4,6 +4,8 @@ moodle-docker/local.yml
 moodle-docker/docker-compose.override.yml
 moodle-docker/vendor/
 moodle-docker/node_modules/
+moodle-docker/local.env 
+
 
 # ---- Runtime / container outputs (don’t commit) ----
 moodle/public/**
