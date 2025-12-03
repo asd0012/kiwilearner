@@ -15,6 +15,9 @@ moodle-docker/**/moodledata/
 moodle-docker/**/dbdata/
 moodle-docker/Makefile.swp
 moodle/local/**
+moodle-docker/local.env
+moodle-docker/exttests/
+moodle-docker/tests/apache2_ports.conf
 
 # BUT keep our plugin tracked
 #!moodle/local/kiwilearner/
