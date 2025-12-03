@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/kiwilearner/db" VERSION="2025120300" COMMENT="KiwiLearner DB">
+<TABLE NAME="local_kiwilearner_goal" COMMENT="Daily goal settings">
+    <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" />
+
+        <!-- NEW: goal type + both targets -->
+        <FIELD NAME="goal_type" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" />
+        <FIELD NAME="xp_target" TYPE="int" LENGTH="10" NOTNULL="false" />
+        <FIELD NAME="lesson_target" TYPE="int" LENGTH="10" NOTNULL="false" />
+
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" />
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" />
+    </FIELDS>
+    <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id" />
+        <KEY NAME="userid_ix" TYPE="index" FIELDS="userid" />
+    </KEYS>
+</TABLE>
+</XMLDB>
+
