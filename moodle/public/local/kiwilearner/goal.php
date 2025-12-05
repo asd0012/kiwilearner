@@ -6,59 +6,114 @@ require_login();
 use local_kiwilearner\goal;
 use local_kiwilearner\form\goal_form;
 
-// Which tab is active (0 = XP, 1 = lessons).
-$goaltype = optional_param('goal_type', goal::TYPE_XP, PARAM_INT);
+// -----------------------------------------------------------------------------
+// 1. Read parameters.
+// -----------------------------------------------------------------------------
+$courseid = required_param('courseid', PARAM_INT);
+$goaltype = optional_param('goal_type', goal::TYPE_LESSON, PARAM_INT);
 
-// Page context & layout.
-$context = \context_user::instance($USER->id);
+// Validate course and context.
+$course  = get_course($courseid);
+$context = context_course::instance($courseid);
+require_login($course);
+
+// -----------------------------------------------------------------------------
+// 2. Page setup.
+// -----------------------------------------------------------------------------
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/kiwilearner/goal.php', ['goal_type' => $goaltype]));
-$PAGE->set_pagelayout('standard');
+$PAGE->set_url(new moodle_url('/local/kiwilearner/goal.php', [
+    'courseid'  => $courseid,
+    'goal_type' => $goaltype,
+]));
+$PAGE->set_pagelayout('course');
 $PAGE->set_title(get_string('goalsettings', 'local_kiwilearner'));
-$PAGE->set_heading(get_string('goalsettings', 'local_kiwilearner'));
+$PAGE->set_heading($course->fullname);
 
-$record = goal::get($USER->id, $goaltype);
+// -----------------------------------------------------------------------------
+// 3. Load existing goal record (per user + course).
+// -----------------------------------------------------------------------------
+$record = goal::get($USER->id, $goaltype, $courseid);
 
-// Safe defaults.
-$defaults = (object)[
+// Reasonable defaults if nothing stored yet.
+// Reasonable defaults if nothing stored yet.
+$defaults = (object) [
+    'courseid'      => $courseid,
     'goal_type'     => $goaltype,
     'xp_target'     => 20,
     'lesson_target' => 2,
 ];
 
 if ($record) {
-    // Use stored goal_type if present, unless URL explicitly forced one.
-    if (isset($record->goal_type) &&
-        !optional_param('goal_type', null, PARAM_RAW) // no explicit override
-    ) {
+    if (isset($record->goal_type)) {
         $defaults->goal_type = (int)$record->goal_type;
     }
 
-    if ($defaults->goal_type === goal::TYPE_XP && isset($record->xp_target)) {
+    // Only copy xp_target if the property actually exists.
+    if (property_exists($record, 'xp_target') && $record->xp_target !== null) {
         $defaults->xp_target = (int)$record->xp_target;
-    } else if ($defaults->goal_type === goal::TYPE_LESSON && isset($record->lesson_target)) {
+    }
+
+    // Only copy lesson_target if the property actually exists.
+    if (property_exists($record, 'lesson_target') && $record->lesson_target !== null) {
         $defaults->lesson_target = (int)$record->lesson_target;
     }
 }
 
-$mform = new goal_form(null, ['defaults' => $defaults]);
+// -----------------------------------------------------------------------------
+// 4. Build the form.
+// -----------------------------------------------------------------------------
+$mform = new goal_form(null, [
+    'courseid'  => $courseid,
+    'goal_type' => $goaltype,
+    'defaults'  => $defaults,
+]);
 
+// -----------------------------------------------------------------------------
+// 5. Form handling.
+// -----------------------------------------------------------------------------
 if ($mform->is_cancelled()) {
-    redirect(new moodle_url('/'));
-} else if ($data = $mform->get_data()) {
-    $type    = (int)$data->goal_type;
-    $xp      = property_exists($data, 'xp_target') ? (int)$data->xp_target : null;
-    $lessons = property_exists($data, 'lesson_target') ? (int)$data->lesson_target : null;
+    // Go back to the course page.
+    redirect(new moodle_url('/course/view.php', ['id' => $courseid]));
 
-    goal::upsert($USER->id, $type, $xp, $lessons);
+} else if ($data = $mform->get_data()) {
+    $newgoaltype = (int)$data->goal_type;
+
+    // Only update the field that is relevant for the selected type.
+    $xptarget     = null;
+    $lessontarget = null;
+
+    if ($newgoaltype === goal::TYPE_XP && isset($data->xp_target)) {
+        $xptarget = (int)$data->xp_target;
+    }
+
+    if ($newgoaltype === goal::TYPE_LESSON && isset($data->lesson_target)) {
+        $lessontarget = (int)$data->lesson_target;
+    }
+
+    goal::upsert(
+        $USER->id,
+        $newgoaltype,
+        $xptarget,
+        $lessontarget,
+        $courseid
+    );
 
     redirect(
-        new moodle_url('/local/kiwilearner/goal.php', ['goal_type' => $type]),
+        new moodle_url('/local/kiwilearner/goal.php', [
+            'courseid'  => $courseid,
+            'goal_type' => $newgoaltype,
+        ]),
         get_string('goalupdated', 'local_kiwilearner')
     );
 }
 
+// -----------------------------------------------------------------------------
+// 6. Output.
+// -----------------------------------------------------------------------------
 echo $OUTPUT->header();
-$mform->set_data($defaults);
+echo $OUTPUT->heading(get_string('goalsettings', 'local_kiwilearner'));
+
 $mform->display();
+
 echo $OUTPUT->footer();
+

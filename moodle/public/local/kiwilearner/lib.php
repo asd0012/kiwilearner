@@ -2,33 +2,42 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Add "Daily goal settings" to the navigation drawer for logged-in users.
+ * Add "Daily goal settings" item to the course "More" menu.
  *
- * This is called automatically by Moodle if the file exists.
+ * Moodle calls this automatically when building the course navigation.
  *
- * @param global_navigation $nav
+ * @param navigation_node $navigation Course navigation node ("More" menu).
+ * @param stdClass        $course     Course object.
+ * @param context_course  $context    Course context.
  */
-function local_kiwilearner_extend_navigation(global_navigation $nav): void {
-    global $USER;
+function local_kiwilearner_extend_navigation_course(
+    navigation_node $navigation,
+    stdClass $course,
+    context_course $context
+): void {
 
-    // No link for guests / not logged in.
+    // Only for logged-in, non-guest users.
     if (!isloggedin() || isguestuser()) {
         return;
     }
 
-    $url = new moodle_url('/local/kiwilearner/goal.php');
+    // Build URL to the goal page for this course.
+    $url = new moodle_url('/local/kiwilearner/goal.php', [
+        'courseid'  => $course->id,
+        // Default to the lessons tab for now.
+        'goal_type' => \local_kiwilearner\goal::TYPE_LESSON,
+    ]);
 
+    // Create a node that will appear under "More".
     $node = navigation_node::create(
-        get_string('goalsettings', 'local_kiwilearner'), // "Daily goal settings"
+        get_string('goalsettings', 'local_kiwilearner'), // e.g. "Daily goal settings"
         $url,
         navigation_node::TYPE_CUSTOM,
         null,
         'local_kiwilearner_goal'
     );
 
-    // For Boost/4.x themes: force it to show in the side drawer.
-    $node->showinflatnavigation = true;
-
-    $nav->add_node($node);
+    // Attach to the course navigation ("More" menu).
+    $navigation->add_node($node);
 }
 
