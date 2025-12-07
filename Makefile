@@ -9,13 +9,10 @@ BACKUP_DIR := $(HOME)/kiwi-backups
 
 DC := ./moodle-docker/bin/moodle-docker-compose
 
-.PHONY: up down restart logs ps open clean nuke backup restore logs_db start stop
+.PHONY: up restart logs ps open clean nuke backup restore logs_db start stop
 
 up:
 	$(DC) up -d
-
-down:
-	$(DC) down
 
 stop:
 	$(DC) stop
@@ -41,7 +38,7 @@ open:
 
 # careful: clean/nuke remove volumes (DB/files)
 clean:
-	down up
+	$(DC) down
 
 
 nuke:
