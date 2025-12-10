@@ -38,3 +38,14 @@
 
 4. To run the docker, go to KiwiLearner root directory and run:
     `sudo make up`
+
+5. Use adminer to access the database: http://localhost:[port]/adminer.php
+
+    Below is the default database settings:
+
+    | Item          | Value                  |
+    |---------------|------------------------|
+    | Server        | localhost              |
+    | Username      | moodle                 |
+    | Password      | m@0dl3ing              |
+    | Database      | moodle                 |
