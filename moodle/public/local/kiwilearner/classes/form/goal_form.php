@@ -27,7 +27,7 @@ class goal_form extends \moodleform {
             'xp_target',
             get_string('xptarget', 'local_kiwilearner')
         );
-        $mform->setType('xp_target', PARAM_INT);
+        $mform->setType('xp_target', PARAM_RAW_TRIMMED);
 
         // Default XP target if provided.
         if (isset($defaults->xp_target)) {
@@ -42,17 +42,30 @@ class goal_form extends \moodleform {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
+        // Required check.
         if (!isset($data['xp_target']) || $data['xp_target'] === '') {
-            $errors['xp_target'] = get_string('required');
-        } else {
-            $xp = (int)$data['xp_target'];
-            if ($xp < 1 || $xp > 999) {
-                $errors['xp_target'] = get_string('error_lessontarget_range', 'local_kiwilearner'); 
-            }
+            $errors['xp_target'] = get_string('error_xptarget_required');
+            return $errors; // No need to continue.
+        }
+
+        $raw = trim($data['xp_target']);
+
+        // STRICT integer check: only digits allowed.
+        if (!preg_match('/^\d+$/', $raw)) {
+            $errors['xp_target'] = get_string('error_xptarget_notint', 'local_kiwilearner');
+            return $errors;
+        }
+
+        // Now safe to cast to int.
+        $xp = (int)$raw;
+
+        if ($xp < 1 || $xp > 999) {
+            $errors['xp_target'] = get_string('error_xptarget_range', 'local_kiwilearner');
         }
 
         return $errors;
     }
+
 
 }
 
