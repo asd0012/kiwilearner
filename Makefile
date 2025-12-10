@@ -9,7 +9,7 @@ BACKUP_DIR := $(HOME)/kiwi-backups
 
 DC := ./moodle-docker/bin/moodle-docker-compose
 
-.PHONY: up restart logs ps open clean nuke backup restore logs_db start stop
+.PHONY: up restart logs ps open clean nuke backup restore logs_db start stop 
 
 up:
 	$(DC) up -d
@@ -35,6 +35,12 @@ ps:
 
 open:
 	xdg-open http://localhost:$(MOODLE_DOCKER_WEB_PORT) || true
+
+exec-web:
+	$(DC) exec webserver bash
+
+debug-tables:
+	$(DC) exec webserver php /var/www/html/public/local/kiwilearner/classes/debug_tables.php
 
 # careful: clean/nuke remove volumes (DB/files)
 clean:
