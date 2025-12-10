@@ -5,7 +5,6 @@ defined('MOODLE_INTERNAL') || die();
 
 class goal {
     public const TYPE_XP      = 0;
-    public const TYPE_LESSON  = 1;
 
     /**
      * Get the single goal row for this user (we keep at most one row per user).
@@ -35,54 +34,36 @@ class goal {
      */
     public static function upsert(
         int $userid,
-        int $goaltype,
-        ?int $xptarget,
-        ?int $lessontarget
+        int $courseid,
+        int $xp_target,
+
     ): void {
         global $DB;
 
         $now = time();
 
-        // Normalise type value just in case.
-        if (!in_array($goaltype, [self::TYPE_XP, self::TYPE_LESSON], true)) {
-            $goaltype = self::TYPE_XP;
-        }
+        $data = (object)[
+            'userid'       => $userid,
+            'courseid'     => $courseid,
+            'xp_target'    => $xp_target,
+            'timemodified' => $now,
+        ];
 
         // Look up by *userid only* – there should be at most one row per user.
         $existing = $DB->get_record(
             'local_kiwilearner_goal',
-            ['userid' => $userid],
+            ['userid' => $userid , 'courseid' => $courseid],
             '*',
             IGNORE_MISSING
         );
 
         if ($existing) {
-            // --- UPDATE PATH ---
-            $existing->goal_type = $goaltype;
-
-            // Only overwrite targets when caller actually sent a value.
-            if ($xptarget !== null) {
-                $existing->xp_target = $xptarget;
-            }
-            if ($lessontarget !== null) {
-                $existing->lesson_target = $lessontarget;
-            }
-
-            $existing->timemodified = $now;
-            $DB->update_record('local_kiwilearner_goal', $existing);
-
+            $data->id          = $existing->id;
+            $data->timecreated = $existing->timecreated;
+            $DB->update_record('local_kiwilearner_goal', $data);
         } else {
-            // --- INSERT PATH (first ever goal for this user) ---
-            $record = (object) [
-                'userid'        => $userid,
-                'goal_type'     => $goaltype,
-                'xp_target'     => $xptarget,
-                'lesson_target' => $lessontarget,
-                'timecreated'   => $now,
-                'timemodified'  => $now,
-            ];
-
-            $DB->insert_record('local_kiwilearner_goal', $record);
+            $data->timecreated = $now;
+            $DB->insert_record('local_kiwilearner_goal', $data);
         }
     }
 }

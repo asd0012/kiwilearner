@@ -23,9 +23,7 @@ function local_kiwilearner_extend_navigation_course(
 
     // Build URL to the goal page for this course.
     $url = new moodle_url('/local/kiwilearner/goal.php', [
-        'courseid'  => $course->id,
-        // Default to the lessons tab for now.
-        'goal_type' => \local_kiwilearner\goal::TYPE_LESSON,
+        'courseid'  => $course->id
     ]);
 
     // Create a node that will appear under "More".
