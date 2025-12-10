@@ -36,6 +36,12 @@ ps:
 open:
 	xdg-open http://localhost:$(MOODLE_DOCKER_WEB_PORT) || true
 
+exec-web:
+	$(DC) exec webserver bash
+
+debug-tables:
+	$(DC) exec webserver php /var/www/html/public/local/kiwilearner/classes/debug_tables.php
+
 # careful: clean/nuke remove volumes (DB/files)
 clean:
 	$(DC) down

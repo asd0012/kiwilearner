@@ -19,8 +19,22 @@
 
 2. Clone this KiwiLearner repository:
 
-`git clone https://eng-git.canterbury.ac.nz/cosc680-2025/kiwilearner.git`
+    `git clone https://eng-git.canterbury.ac.nz/cosc680-2025/kiwilearner.git`
 
 3. Run the setup script
 
-`bash kiwilearner/setup.sh`
+    `bash kiwilearner/setup.sh`
+    
+    Below is the default settings:
+
+    | Item          | Value                  |
+    |---------------|------------------------|
+    | Moodle URL    | http://localhost:8000  |
+    | Username      | admin                  |
+    | Password      | test                   |
+    | Admin Email   | admin@example.com      |
+
+    KiwiLearner will automatically run after setup.
+
+4. To run the docker, go to KiwiLearner root directory and run:
+    `sudo make up`
