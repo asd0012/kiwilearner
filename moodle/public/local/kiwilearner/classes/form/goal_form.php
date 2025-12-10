@@ -33,9 +33,26 @@ class goal_form extends \moodleform {
         if (isset($defaults->xp_target)) {
             $mform->setDefault('xp_target', $defaults->xp_target);
         }
-        
+
         // Standard action buttons.
         $this->add_action_buttons(true, get_string('savechanges'));
     }
+
+    // Moodle will automatically call this function for validation
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+
+        if (!isset($data['xp_target']) || $data['xp_target'] === '') {
+            $errors['xp_target'] = get_string('required');
+        } else {
+            $xp = (int)$data['xp_target'];
+            if ($xp < 1 || $xp > 999) {
+                $errors['xp_target'] = get_string('error_lessontarget_range', 'local_kiwilearner'); 
+            }
+        }
+
+        return $errors;
+    }
+
 }
 

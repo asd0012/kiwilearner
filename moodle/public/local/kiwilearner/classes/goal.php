@@ -40,6 +40,12 @@ class goal {
     ): void {
         global $DB;
 
+        // Safety check
+        if ($xp_target < 1 || $xp_target > 999) {
+            throw new \moodle_exception('invalidxptarget', 'local_kiwilearner',
+                '', null, 'XP target must be between 1 and 999.');
+        }
+
         $now = time();
 
         $data = (object)[
