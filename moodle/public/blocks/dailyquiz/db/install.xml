@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="blocks/dailyquiz/db" VERSION="2025121200" COMMENT="DB schema for Daily Quiz block">
+    <TABLE NAME="block_dailyquiz_temp" COMMENT="Temporary storage for quiz attempts">
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="answer" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="score" TYPE="float" NOTNULL="true"/>
+        <KEYS>
+            <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        </KEYS>
+    </TABLE>
+</XMLDB>
+
