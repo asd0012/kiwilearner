@@ -58,7 +58,7 @@
 
 3. The timestamp will be the end of your config files in kiwi-backups folder.
     e.g. moodle-2025-12-07_230101.sql
-4. Run **make restore STAMP=xxxx-xx-xx_xxxxx** to restore your config.
-    e.g make store STAMP=2025-12-07_230101
+4. Run **make restore STAMP=xxxx-xx-xx_xxxxxx** to restore your config.
+    e.g make restore STAMP=2025-12-07_230101
 
 
