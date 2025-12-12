@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <XMLDB PATH="blocks/kiwilearner_dailyquiz/db" VERSION="2025121200" COMMENT="DB schema for Daily Quiz block">
+  <TABLES>
     <TABLE NAME="block_kiwilearner_dailyquiz_temp" COMMENT="Temporary storage for quiz attempts">
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
@@ -15,5 +16,6 @@
             <foreignkey name="questionid_fk" field="questionid" references="question(id)" ondelete="cascade"/>
         </foreignkeys>
     </TABLE>
+  </TABLES>
 </XMLDB>
 
