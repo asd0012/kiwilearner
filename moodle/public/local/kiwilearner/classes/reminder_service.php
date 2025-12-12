@@ -24,34 +24,38 @@ class reminder_service {
         // 1) Figure out "today" boundary (server time for now).
         $now = time();
         $daystart = strtotime('today midnight', $now);
+	$dayend   = $daystart + DAYSECS;   // DAYSECS = 86400 in Moodle
 
         // 2) Pull all users who have a daily goal AND notifications enabled,
         //    and join today's XP summary if it exists.
-        $sql = "
-            SELECT
-                g.id            AS goalid,
-                g.userid        AS userid,
-                g.courseid      AS courseid,
-                g.xp_target     AS xp_target,
-                COALESCE(s.xptotal, 0) AS xptotal,
-                u.firstname     AS firstname,
-                u.lastname      AS lastname,
-                c.fullname      AS coursename
-            FROM {local_kiwilearner_goal} g
-            JOIN {user} u
-                ON u.id = g.userid
-            JOIN {course} c
-                ON c.id = g.courseid
-            JOIN {local_kiwilearner_notify_pref} p
-                ON p.userid = g.userid
-               AND p.notifyenabled = 1
-            LEFT JOIN {local_kiwilearner_xp_summary_day} s
-                ON s.userid = g.userid
-               AND s.courseid = g.courseid
-               AND s.daystart = :daystart
-        ";
+	$sql = "SELECT
+		g.id        AS goalid,
+		g.userid    AS userid,
+		g.courseid  AS courseid,
+		g.xp_target AS xp_target,
+		COALESCE(s.xptotal, 0) AS xptotal,
+		u.firstname AS firstname,
+		u.lastname  AS lastname,
+		c.fullname  AS coursename
+		FROM {local_kiwilearner_goal} g
+		JOIN {user} u
+		ON u.id = g.userid
+		JOIN {course} c
+		ON c.id = g.courseid
+		JOIN {local_kiwilearner_notify_pref} p
+		ON p.userid = g.userid
+		AND p.notifyenabled = 1
+		LEFT JOIN {local_kiwilearner_xp_summary_day} s
+		ON s.userid   = g.userid
+		AND s.courseid = g.courseid
+		AND s.daystart >= :daystart
+		AND s.daystart <  :dayend
+";
 
-        $params = ['daystart' => $daystart];
+	$params = [
+		'daystart' => $daystart,
+		'dayend'   => $dayend,
+	];
 
         $records = $DB->get_records_sql($sql, $params);
 
@@ -62,9 +66,8 @@ class reminder_service {
 
 	foreach ($records as $r) {
 		$xptarget = (int)$r->xp_target;
-		$xptoday  = (int)$r->xptotal;
+		$xptoday  = (int)$r->xptotal;   // <-- from COALESCE(s.xptotal, 0) AS xptotal
 
-		// Build a minimal goal object for goal_status::compute_status().
 		$goal = (object)[
 			'xp_target' => $xptarget,
 		];
