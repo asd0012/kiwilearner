@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/kiwilearner/db" VERSION="2025121000" COMMENT="KiwiLearner XP Plugin DB Schema">
+<XMLDB PATH="local/kiwilearner/db" VERSION="2025121301" COMMENT="KiwiLearner XP Plugin DB Schema">
 
     <TABLES>
 
