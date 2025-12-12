@@ -12,7 +12,7 @@ function shuffle_assoc($list) {
     return $random;
 }
 
-function block_dailyquiz_get_mcq_questions($courseid, $topics = [], $numquestions = 5) {
+function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], $numquestions = 5) {
     global $DB;
 
     $sql = "SELECT q.id, q.questiontext, q.qtype
@@ -52,7 +52,7 @@ function block_dailyquiz_get_mcq_questions($courseid, $topics = [], $numquestion
     return $quizquestions;
 }
 
-function block_dailyquiz_submit_attempt($userid, $answers) {
+function block_kiwilearner_dailyquiz_submit_attempt($userid, $answers) {
     global $DB;
     foreach ($answers as $questionid => $answer) {
         $question = $DB->get_record('question', ['id' => $questionid]);
@@ -66,13 +66,13 @@ function block_dailyquiz_submit_attempt($userid, $answers) {
         $record->questionid = $questionid;
         $record->answer = $answer;
         $record->score = $score;
-        $DB->insert_record('block_dailyquiz_temp', $record);
+        $DB->insert_record('block_kiwilearner_dailyquiz_temp', $record);
     }
 }
 
-function block_dailyquiz_get_results($userid) {
+function block_kiwilearner_dailyquiz_get_results($userid) {
     global $DB;
-    $attempts = $DB->get_records('block_dailyquiz_temp', ['userid' => $userid]);
+    $attempts = $DB->get_records('block_kiwilearner_dailyquiz_temp', ['userid' => $userid]);
     $results = ['total' => 0, 'questions' => []];
     foreach ($attempts as $a) {
         $question = $DB->get_record('question', ['id' => $a->questionid]);
