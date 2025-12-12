@@ -4,21 +4,19 @@ namespace local_kiwilearner;
 defined('MOODLE_INTERNAL') || die();
 
 class goal {
-    public const TYPE_XP      = 0;
 
     /**
      * Get the single goal row for this user (we keep at most one row per user).
      */
-    public static function get(int $userid, int $goaltype): ?\stdClass {
+    public static function get(int $userid, int $courseid): ?\stdClass {
         global $DB;
 
-        // We ignore $goaltype here – there is only one row per user.
-        $record = $DB->get_record(
-            'local_kiwilearner_goal',
-            ['userid' => $userid],
-            '*',
-            IGNORE_MISSING
-        );
+        $params = [
+            'userid'   => $userid,
+            'courseid' => $courseid,
+        ];
+
+        $record = $DB->get_record('local_kiwilearner_goal', $params, '*', IGNORE_MISSING);
 
         return $record ?: null;
     }

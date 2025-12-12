@@ -16,7 +16,5 @@ $string['error_xptarget_range']    = 'XP target must be between 1 and 999.';
 $string['xptarget_help'] = 'How many XP you aim to earn per day.';
 
 $string['goalupdated'] = 'Your daily XP goal has been updated.';
-$string['pluginname'] = 'KiwiLearner';
-$string['goalupdated'] = 'Your daily XP goal has been updated.';
 $string['task_send_reminders'] = 'Send daily goal reminders';
 

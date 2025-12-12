@@ -35,7 +35,10 @@
                 <FIELD NAME="id"           TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="true" />
                 <FIELD NAME="courseid"     TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="questionid"   TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
-                <FIELD NAME="xpvalue"      TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <!-- <FIELD NAME="xpvalue"      TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" /> -->
+                <FIELD NAME="xp_participation"      TYPE="int"   LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" />
+                <FIELD NAME="xp_correct"   TYPE="int"   LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" />
+
                 <FIELD NAME="enabled"      TYPE="int"   LENGTH="1"  NOTNULL="true" DEFAULT="1" SEQUENCE="false" />
                 <FIELD NAME="timecreated"  TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="timemodified" TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
