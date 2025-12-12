@@ -61,7 +61,7 @@
         <TABLE NAME="local_kiwilearner_xp_event" COMMENT="XP ledger events per student per course">
             <FIELDS>
                 <FIELD NAME="id"          TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="true" />
-                <FIELD NAME="userid"      TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />DEFAULT="1"
+                <FIELD NAME="userid"      TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="courseid"    TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="questionid"  TYPE="int"   LENGTH="10" NOTNULL="false" SEQUENCE="false" />
                 <FIELD NAME="attemptid"   TYPE="int"   LENGTH="10" NOTNULL="false" SEQUENCE="false" />
