@@ -139,7 +139,14 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->drop_field($table, $xpvalue);
         }
 
-        upgrade_plugin_savepoint(true, 2025121301, 'local', 'kiwilearner');
+    }
+
+    // 2025 12 13 02: Automatically add fields for question
+    if ($oldversion < 2025121303) {
+        \local_kiwilearner\customfields\question_fields_manager::ensure_fields_exist();
+
+        // Mark this upgrade step as successful.
+        upgrade_plugin_savepoint(true, 2025121303, 'local', 'kiwilearner');
     }
 
     return true;
