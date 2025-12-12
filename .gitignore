@@ -39,3 +39,5 @@ moodle/blocks/**
 moodle/config.php
 moodle/moodledata/
 docker-compose.yml
+moodle/public/local/kiwilearner/db/messages.php
+.vscode/
