@@ -1,4 +1,7 @@
-<form method="post" action="">
+<form method="post" action="{{{posturl}}}">
+    <input type="hidden" name="id" value="{{courseid}}">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+
     <h3>{{quizname}}</h3>
 
     {{#questions}}
