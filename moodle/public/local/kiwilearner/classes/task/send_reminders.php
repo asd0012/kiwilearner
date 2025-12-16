@@ -31,8 +31,7 @@ class send_reminders extends \core\task\scheduled_task {
 
         // 2) Delegate the actual logic to a service class (easy to change later).
         $service = new \local_kiwilearner\reminder_service();
-        #$service->send_for_slot($slot);
-        $service->send_for_slot('evening');
+        $service->send_for_slot($slot);
 
         mtrace('KiwiLearner: send_reminders task finished');
     }
