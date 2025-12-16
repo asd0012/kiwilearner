@@ -7,7 +7,7 @@ class block_kiwilearner_dailyquiz extends block_base {
     }
 
     public function get_content() {
-        global $USER, $OUTPUT;
+        global $USER, $OUTPUT, $COURSE;
 
         if ($this->content !== null) {
             return $this->content;
@@ -16,17 +16,15 @@ class block_kiwilearner_dailyquiz extends block_base {
         $this->content = new stdClass;
         $this->content->text = '';
 
-	$mform = new \block_kiwilearner_dailyquiz\form\generate_form();
-	require_once(__DIR__ . '/lib.php');
-
         $mform = new \block_kiwilearner_dailyquiz\form\generate_form();
+        require_once(__DIR__ . '/lib.php');
 
         if ($mform->is_cancelled()) {
             $this->content->text .= 'Quiz cancelled.';
         } else if ($data = $mform->get_data()) {
             // Fetch questions
             $topics = array_map('trim', explode(',', $data->topics));
-            $questions = block_kiwilearner_dailyquiz_get_mcq_questions($this->page->course->id, $topics, $data->numquestions);
+            $questions = block_kiwilearner_dailyquiz_get_mcq_questions($COURSE->id, $topics, $data->numquestions); //########--------######
 
             // Display quiz form or submission results
             if (isset($_POST['submitquiz'])) {
