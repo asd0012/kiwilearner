@@ -16,8 +16,8 @@ class block_kiwilearner_dailyquiz extends block_base {
         $this->content = new stdClass;
         $this->content->text = '';
 
-        require_once($this->dir . '/classes/form/generate_form.php');
-        require_once($this->dir . '/lib.php');
+	$mform = new \block_kiwilearner_dailyquiz\form\generate_form();
+	require_once(__DIR__ . '/lib.php');
 
         $mform = new \block_kiwilearner_dailyquiz\form\generate_form();
 
