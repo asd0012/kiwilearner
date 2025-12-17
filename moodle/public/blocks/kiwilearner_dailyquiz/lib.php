@@ -36,7 +36,24 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
     $course = get_course($courseid);
 
     $context = context_course::instance($courseid, MUST_EXIST);
-    $contextid = $context->id;
+    // Find the actual question bank context(s) for this course by looking at where
+    // the course’s question categories live.
+    $contextids = $DB->get_fieldset_sql("
+        SELECT DISTINCT qc.contextid
+        FROM {question_categories} qc
+        JOIN {context} c ON c.id = qc.contextid
+        WHERE c.instanceid = :courseid
+    ", ['courseid' => $courseid]);
+
+    $contextids = array_values(array_unique(array_map('intval', $contextids)));
+
+    if (empty($contextids)) {
+        error_log("DailyQuiz: No question bank context found for courseid={$courseid}");
+        return [];
+    }
+
+    list($ctxsql, $ctxparams) = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED, 'ctx');
+
 
     error_log('DailyQuiz courseid='.$courseid.' course->category='.$course->category.' searching contexts: '.json_encode($contextids));
 
@@ -44,7 +61,6 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
 
     // Base query:
     // - Restrict to this course's question bank context (like old qc.course = :courseid idea)
-    // - Only multichoice
     // - Only latest READY version per question_bank_entry (Moodle 4+ versioning)
     $sql = "
         SELECT DISTINCT q.id
@@ -52,7 +68,7 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
           JOIN {question_versions} qv ON qv.questionid = q.id
           JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
           JOIN {question_categories} qc ON qc.id = qbe.questioncategoryid
-         WHERE qc.contextid = :contextid
+         WHERE qc.contextid $ctxsql
            AND q.parent = 0
 
            AND qv.status = :readystatus
@@ -64,11 +80,14 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
            )
     ";
 
+    // add "AND q.qtype = :qtype", to specify qtype
+
     $params = [
-        'contextid' => $contextid,
+        // 'contextid' => $contextid,
         // 'qtype' => 'multichoice',
         'readystatus' => $readystatus,
     ];
+    $params = array_merge($params, $ctxparams);
 
     // Optional tag filter: question tags live in {tag_instance}/{tag}
     // Questions are tagged with component='core_question', itemtype='question'. :contentReference[oaicite:6]{index=6}
@@ -94,7 +113,7 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
         ], $tagparams);
     }
 
-    error_log('DailyQuiz courseid='.$courseid.' course->category='.$course->category.' using contextid='.$contextid);
+    error_log('DailyQuiz courseid='.$courseid.' course->category='.$course->category);
     error_log("DailyQuiz SQL:\n".$sql);
     error_log("DailyQuiz params:\n".json_encode($params));
 
