@@ -35,17 +35,26 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
 
     $course = get_course($courseid);
 
-    $context = context_course::instance($courseid, MUST_EXIST);
+    // 1) Course context.
+    $coursectx = context_course::instance($courseid, MUST_EXIST);
     // Find the actual question bank context(s) for this course by looking at where
     // the course’s question categories live.
-    $contextids = $DB->get_fieldset_sql("
-        SELECT DISTINCT qc.contextid
-        FROM {question_categories} qc
-        JOIN {context} c ON c.id = qc.contextid
-        WHERE c.instanceid = :courseid
-    ", ['courseid' => $courseid]);
+    $contextids = [$coursectx->id];
 
-    $contextids = array_values(array_unique(array_map('intval', $contextids)));
+    // 2) Course category context.
+    $catctx = context_coursecat::instance($course->category, MUST_EXIST);
+    $contextids[] = $catctx->id;
+
+    // 3) All module contexts in this course.
+    $modulectxids = $DB->get_fieldset_sql("
+        SELECT c.id
+        FROM {context} c
+        JOIN {course_modules} cm ON cm.id = c.instanceid
+        WHERE c.contextlevel = :lvl
+        AND cm.course = :courseid
+    ", ['lvl' => CONTEXT_MODULE, 'courseid' => $courseid]);
+
+    $contextids = array_values(array_unique(array_merge($contextids, $modulectxids)));
 
     if (empty($contextids)) {
         error_log("DailyQuiz: No question bank context found for courseid={$courseid}");
@@ -181,14 +190,14 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
         foreach ($answersbyq[$qid] ?? [] as $a) {
             $opts[] = [
                 'id' => (int)$a->id,
-                'text' => format_text($a->answer, $a->answerformat, ['context' => $context]),
+                'text' => format_text($a->answer, $a->answerformat, ['context' => $coursectx]),
             ];
         }
         shuffle($opts);
 
         $quizquestions[] = [
             'id' => (int)$q->id,
-            'text' => format_text($q->questiontext, $q->questiontextformat, ['context' => $context]),
+            'text' => format_text($q->questiontext, $q->questiontextformat, ['context' => $coursectx]),
             'options' => $opts,
         ];
     }
