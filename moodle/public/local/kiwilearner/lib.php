@@ -10,6 +10,17 @@ defined('MOODLE_INTERNAL') || die();
  * @param stdClass        $course     Course object.
  * @param context_course  $context    Course context.
  */
+
+defined('MOODLE_INTERNAL') || die();
+
+function local_kiwilearner_before_http_headers(): void {
+    if (headers_sent()) {
+        return;
+    }
+    header('X-Content-Type-Options: nosniff');
+}
+
+
 function local_kiwilearner_extend_navigation_course(
     navigation_node $navigation,
     stdClass $course,
