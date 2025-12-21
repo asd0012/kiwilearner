@@ -56,7 +56,7 @@ class question_fields_manager {
             self::create_number_field(
                 $category,
                 self::FIELD_XP_PARTICIPATION,
-                get_string('kiwi_xp_participation_xp', 'local_kiwilearner');
+                get_string('kiwi_xp_participation_xp', 'local_kiwilearner')
             );
         }
 
@@ -64,7 +64,7 @@ class question_fields_manager {
             self::create_number_field(
                 $category,
                 self::FIELD_XP_CORRECT,
-                get_string('kiwi_xp_correct_xp', 'local_kiwilearner');
+                get_string('kiwi_xp_correct_xp', 'local_kiwilearner')
             );
         }
 
@@ -72,7 +72,7 @@ class question_fields_manager {
             self::create_checkbox_field(
                 $category,
                 self::FIELD_XP_ENABLED,
-                get_string('kiwi_xp_enabled', 'local_kiwilearner');
+                get_string('kiwi_xp_enabled', 'local_kiwilearner')
             );
         }
     }
@@ -143,9 +143,10 @@ class question_fields_manager {
         $field->set('description', '');
         $field->set('descriptionformat', FORMAT_HTML);
 
-        $configdata = new \stdClass();
-        // For checkbox, a configdata->defaultvalue could be set, but we leave it to admin.
-
+        // TODO: For checkbox, default value could be set by admin.
+        $configdata = (object)[
+            'checkbydefault' => 0,   
+        ];
         api::save_field_configuration($field, $configdata);
     }
 }
