@@ -3,6 +3,7 @@ namespace local_kiwilearner\utils;
 
 defined('MOODLE_INTERNAL') || die();
 
+use core_customfield\api;
 use core_customfield\handler;
 use core_customfield\field_controller;
 use qbank_customfields\customfield\question_handler;
@@ -18,30 +19,44 @@ class xp_sync_helper {
     public static function get_xp_from_customfields(int $questionid): ?array {
         global $DB;
 
-        // Load custom field handler for questions.
         $handler = question_handler::create();
 
-        // Get custom field data for this question instance.
-        $instance = $handler->get_instance($questionid);
-        if (!$instance) {
+        // IMPORTANT: api::get_instance_fields_data expects an array of field controllers.
+        $fields = $handler->get_fields();
+        if (empty($fields)) {
             return null;
         }
 
-        $data = $handler->export_instance_data_object($instance);
+        $data = api::get_instance_fields_data($fields, $questionid);
 
-        $p = $data->{'customfield_' . question_fields_manager::FIELD_XP_PARTICIPATION} ?? null;
-        $c = $data->{'customfield_' . question_fields_manager::FIELD_XP_CORRECT} ?? null;
-        $e = $data->{'customfield_' . question_fields_manager::FIELD_XP_ENABLED} ?? null;
+        // Defaults if fields exist but values are empty.
+        $result = array(
+            'xp_participation' => 0,
+            'xp_correct'       => 1,
+            'enabled'          => 1,
+        );
 
-        if ($p === null && $c === null && $e === null) {
-            return null;
+
+        $foundany = false;
+
+        foreach ($data as $d) {
+            $shortname = $d->get_field()->get('shortname');
+            $value = $d->get_value();
+
+            if ($shortname === question_fields_manager::FIELD_XP_PARTICIPATION) {
+                $result['xp_participation'] = (int)$value;
+                $foundany = true;
+            } else if ($shortname === question_fields_manager::FIELD_XP_CORRECT) {
+                $result['xp_correct'] = (int)$value;
+                $foundany = true;
+            } else if ($shortname === question_fields_manager::FIELD_XP_ENABLED) {
+                // checkbox fields can come back as '0'/'1' or '' depending on state
+                $result['enabled'] = (int)!empty($value);
+                $foundany = true;
+            }
         }
 
-        return [
-            'participation' => (int)($p ?? 0),
-            'correct'       => (int)($c ?? 1),
-            'enabled'       => (bool)($e ?? true),
-        ];
+        return $foundany ? $result : null;
     }
 
     /**
@@ -55,14 +70,14 @@ class xp_sync_helper {
             'courseid'   => $courseid,
         ]);
 
-        $record = (object)[
+        $record = array(
             'questionid'       => $questionid,
             'courseid'         => $courseid,
-            'xp_participation' => $xp['participation'],
-            'xp_correct'       => $xp['correct'],
+            'xp_participation' => $xp['xp_participation'],
+            'xp_correct'       => $xp['xp_correct'],
             'enabled'          => $xp['enabled'] ? 1 : 0,
             'timemodified'     => time(),
-        ];
+        );
 
         if ($existing) {
             $record->id = $existing->id;
