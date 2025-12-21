@@ -17,3 +17,7 @@ $string['xptarget_help'] = 'How many XP you aim to earn per day.';
 
 $string['goalupdated'] = 'Your daily XP goal has been updated.';
 
+// Kiwilearner xp field for questions
+$string['kiwi_xp_participation_xp'] = 'Kiwi XP – participation xp granted';
+$string['kiwi_xp_correct_xp'] = 'Kiwi XP – correct answer xp granted';
+$string['kiwi_xp_enabled'] = 'Enable Kiwi XP';
