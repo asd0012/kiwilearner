@@ -149,5 +149,35 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2025121303, 'local', 'kiwilearner');
     }
 
+    // 2025 12 21 01: add checkbydefault
+    if ($oldversion < 2025122101) {
+        global $DB;
+
+        // Patch existing checkbox customfield config.
+        $shortname = 'kiwi_xp_enabled';
+
+        $field = $DB->get_record('customfield_field', [
+            'shortname' => $shortname,
+        ], '*', IGNORE_MISSING);
+
+        if ($field) {
+            $config = [];
+            if (!empty($field->configdata)) {
+                $decoded = json_decode($field->configdata, true);
+                if (is_array($decoded)) {
+                    $config = $decoded;
+                }
+            }
+
+            if (!array_key_exists('checkbydefault', $config)) {
+                $config['checkbydefault'] = 0;
+                $field->configdata = json_encode($config);
+                $DB->update_record('customfield_field', $field);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2025122101, 'local', 'kiwilearner');
+    }
+
     return true;
 }
