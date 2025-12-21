@@ -3,8 +3,6 @@ namespace local_kiwilearner\utils;
 
 defined('MOODLE_INTERNAL') || die();
 
-use context_course;
-
 class xp_engine {
 
     /**
@@ -13,27 +11,56 @@ class xp_engine {
     public static function award_participation_xp(int $userid, int $courseid, int $attemptid): void {
         global $DB;
 
-        // Get all question usages from this attempt.
-        $slots = $DB->get_records('quiz_attempts', ['id' => $attemptid], '', 'uniqueid');
-        if (!$slots) {
+        if ($userid <= 0 || $courseid <= 0 || $attemptid <= 0) {
             return;
         }
 
-        $usageid = reset($slots)->uniqueid;
+        $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid],
+            'id, userid, course, uniqueid, state, timefinish',
+            IGNORE_MISSING
+        );
+        if (!$attempt) {
+            return;
+        }
+        if ((int)$attempt->userid !== $userid) {
+            return;
+        }
+        if ((int)$attempt->course !== $courseid) {
+            return;
+        }
+        // Only award when finished.
+        if (empty($attempt->timefinish) || $attempt->state !== 'finished') {
+            return;
+        }
 
-        // From question_usage_steps, get question ids used in this attempt.
-        $stepqs = $DB->get_records('question_attempts', ['questionusageid' => $usageid], '', 'questionid, id');
+        $usageid = (int)$attempt->uniqueid;
+        if ($usageid <= 0) {
+            return;
+        }
 
-        foreach ($stepqs as $qa) {
-            $questionid = $qa->questionid;
+        // question_attempts rows for this usage = all questions in this attempt.
+        $qas = $DB->get_records('question_attempts', ['questionusageid' => $usageid], '', 'id, questionid');
+        if (!$qas) {
+            return;
+        }
+
+        foreach ($qas as $qa) {
+            $questionid = (int)$qa->questionid;
+            if ($questionid <= 0) {
+                continue;
+            }
             self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'participation');
         }
     }
 
     /**
      * Award XP for correctness after question_graded.
+     * $grade is 0..1 (fraction).
      */
     public static function award_correct_xp(int $userid, int $courseid, int $questionid, int $attemptid, float $grade): void {
+        if ($userid <= 0 || $courseid <= 0 || $questionid <= 0 || $attemptid <= 0) {
+            return;
+        }
         if ($grade <= 0) {
             return; // No XP if incorrect.
         }
@@ -42,70 +69,92 @@ class xp_engine {
     }
 
     /**
-     * Internal helper for inserting XP ledger rows and updating daily summaries.
+     * Insert XP ledger rows and update daily summaries.
+     *
+     * Idempotency:
+     * Prevent double-awards by checking if we already wrote an xp_event row for
+     * (userid, courseid, questionid, attemptid, type).
+     *
+     * NOTE: This idempotency uses "reason" as the type marker (no schema changes required).
      */
     private static function apply_xp_for_event(int $userid, int $courseid, int $questionid, int $attemptid, string $type): void {
         global $DB;
 
-        // Load XP config (source of truth).
+        // Load XP config.
         $cfg = $DB->get_record('local_kiwilearner_question_xp', [
             'questionid' => $questionid,
             'courseid'   => $courseid,
-        ]);
+        ], '*', IGNORE_MISSING);
 
-        if (!$cfg || !$cfg->enabled) {
-            return; // XP disabled for this question.
-        }
-
-        // Determine XP amount.
-        $xp = ($type === 'participation') ? $cfg->xp_participation : $cfg->xp_correct;
-        if ($xp == 0) {
+        if (!$cfg || empty($cfg->enabled)) {
             return;
         }
 
-        // Insert into XP event ledger.
+        $xp = ($type === 'participation') ? (int)$cfg->xp_participation : (int)$cfg->xp_correct;
+        if ($xp === 0) {
+            return;
+        }
+
+        // Idempotency guard (prevents double awarding).
+        $reason = 'kiwilearner:' . $type;
+        $already = $DB->record_exists('local_kiwilearner_xp_event', [
+            'userid'     => $userid,
+            'courseid'   => $courseid,
+            'questionid' => $questionid,
+            'attemptid'  => $attemptid,
+            'reason'     => $reason,
+        ]);
+        if ($already) {
+            return;
+        }
+
+        $t = time();
+
+        // Write ledger row.
         $event = (object)[
             'userid'      => $userid,
             'courseid'    => $courseid,
             'questionid'  => $questionid,
             'attemptid'   => $attemptid,
             'xpdelta'     => $xp,
-            'reason'      => "XP awarded for {$type}",
+            'reason'      => $reason,
             'createdby'   => null,
-            'timecreated' => time(),
+            'timecreated' => $t,
         ];
         $DB->insert_record('local_kiwilearner_xp_event', $event);
 
-        // Update daily summary table.
-        self::update_daily_summary($userid, $courseid, $xp);
+        // Update daily summary.
+        self::update_daily_summary($userid, $courseid, $xp, $t);
     }
 
     /**
      * Update daily XP summary table.
+     * Uses Moodle's user-midnight, not server timezone midnight.
      */
-    private static function update_daily_summary(int $userid, int $courseid, int $xp): void {
+    private static function update_daily_summary(int $userid, int $courseid, int $xp, int $now): void {
         global $DB;
 
-        $daystart = strtotime('today midnight');
+        // Moodle helper: midnight in user's timezone.
+        $daystart = usergetmidnight($now);
 
         $existing = $DB->get_record('local_kiwilearner_xp_summary_day', [
             'userid'   => $userid,
             'courseid' => $courseid,
             'daystart' => $daystart,
-        ]);
+        ], '*', IGNORE_MISSING);
 
         if ($existing) {
-            $existing->xptotal += $xp;
-            $existing->timemodified = time();
+            $existing->xptotal = (int)$existing->xptotal + (int)$xp;
+            $existing->timemodified = $now;
             $DB->update_record('local_kiwilearner_xp_summary_day', $existing);
         } else {
             $record = (object)[
                 'userid'       => $userid,
                 'courseid'     => $courseid,
                 'daystart'     => $daystart,
-                'xptotal'      => $xp,
-                'timecreated'  => time(),
-                'timemodified' => time(),
+                'xptotal'      => (int)$xp,
+                'timecreated'  => $now,
+                'timemodified' => $now,
             ];
             $DB->insert_record('local_kiwilearner_xp_summary_day', $record);
         }
