@@ -1,4 +1,4 @@
-#!/bin/bash
+wsl#!/bin/bash
 # ==============================================
 # Moodle-Docker quick-start script -by ChatGPT, modified by Yue
 # ==============================================

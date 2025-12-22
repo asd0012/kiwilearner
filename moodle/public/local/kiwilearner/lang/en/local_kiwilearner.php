@@ -40,3 +40,7 @@ $string['reminder_small_missed'] = 'You missed today\'s XP goal in {$a}.';
 
 $string['messageprovider:goalreminder'] = 'KiwiLearner daily goal reminders';
 
+// Kiwilearner xp field for questions
+$string['kiwi_xp_participation_xp'] = 'Kiwi XP – participation xp granted';
+$string['kiwi_xp_correct_xp'] = 'Kiwi XP – correct answer xp granted';
+$string['kiwi_xp_enabled'] = 'Enable Kiwi XP';

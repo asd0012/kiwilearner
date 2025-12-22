@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="blocks/kiwilearner_dailyquiz/db" VERSION="2025121200" COMMENT="DB schema for Daily Quiz block">
+  <TABLES>
+    <TABLE NAME="block_kiwilearner_dailyquiz_temp" COMMENT="Temporary storage for quiz attempts">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="answer" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="score" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="questionid_fk" TYPE="foreign" FIELDS="questionid" REFTABLE="question" REFFIELDS="id"/>
+      </KEYS>
+
+      <INDEXES>
+        <INDEX NAME="userid_ix" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="questionid_ix" UNIQUE="false" FIELDS="questionid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
+

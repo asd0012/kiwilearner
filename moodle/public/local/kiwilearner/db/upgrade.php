@@ -83,5 +83,101 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2025121002, 'local', 'kiwilearner');
     }
 
+    // 2025 12 13 01: seperate xpvalue to xp_participation/xp_correct
+    if ($oldversion < 2025121301) {
+        $table = new xmldb_table('local_kiwilearner_question_xp');
+
+        // 1) Add xp_participation (INT, NOT NULL, DEFAULT 0) if missing.
+        $xppart = new xmldb_field(
+            'xp_participation',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            0,
+            'questionid' // place after questionid
+        );
+
+        if (!$dbman->field_exists($table, $xppart)) {
+            $dbman->add_field($table, $xppart);
+        } else {
+            // Ensure default + notnull are correct if field already exists.
+            $dbman->change_field_default($table, $xppart);
+            $dbman->change_field_notnull($table, $xppart);
+        }
+
+        // 2) Add xp_correct (INT, NOT NULL, DEFAULT 1) if missing.
+        $xpcorrect = new xmldb_field(
+            'xp_correct',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            1,
+            'xp_participation' // place after xp_participation
+        );
+
+        if (!$dbman->field_exists($table, $xpcorrect)) {
+            $dbman->add_field($table, $xpcorrect);
+        } else {
+            $dbman->change_field_default($table, $xpcorrect);
+            $dbman->change_field_notnull($table, $xpcorrect);
+        }
+
+        // 3) Migrate old xpvalue → xp_correct, if xpvalue still exists.
+        $xpvalue = new xmldb_field('xpvalue');
+        if ($dbman->field_exists($table, $xpvalue)) {
+            // Copy existing xpvalue into xp_correct (only where xp_correct is still default).
+            $DB->execute("
+                UPDATE {local_kiwilearner_question_xp}
+                SET xp_correct = xpvalue
+                WHERE xpvalue IS NOT NULL
+            ");
+            // 4) Drop the legacy xpvalue column.
+            $dbman->drop_field($table, $xpvalue);
+        }
+
+    }
+
+    // 2025 12 13 02: Automatically add fields for question
+    if ($oldversion < 2025121303) {
+        \local_kiwilearner\customfields\question_fields_manager::ensure_fields_exist();
+
+        // Mark this upgrade step as successful.
+        upgrade_plugin_savepoint(true, 2025121303, 'local', 'kiwilearner');
+    }
+
+    // 2025 12 21 01: add checkbydefault
+    if ($oldversion < 2025122101) {
+        global $DB;
+
+        // Patch existing checkbox customfield config.
+        $shortname = 'kiwi_xp_enabled';
+
+        $field = $DB->get_record('customfield_field', [
+            'shortname' => $shortname,
+        ], '*', IGNORE_MISSING);
+
+        if ($field) {
+            $config = [];
+            if (!empty($field->configdata)) {
+                $decoded = json_decode($field->configdata, true);
+                if (is_array($decoded)) {
+                    $config = $decoded;
+                }
+            }
+
+            if (!array_key_exists('checkbydefault', $config)) {
+                $config['checkbydefault'] = 0;
+                $field->configdata = json_encode($config);
+                $DB->update_record('customfield_field', $field);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2025122101, 'local', 'kiwilearner');
+    }
+
     return true;
 }
