@@ -39,3 +39,4 @@ moodle/blocks/**
 moodle/config.php
 moodle/moodledata/
 docker-compose.yml
+.vscode/

@@ -10,6 +10,8 @@ defined('MOODLE_INTERNAL') || die();
  * @param stdClass        $course     Course object.
  * @param context_course  $context    Course context.
  */
+
+
 function local_kiwilearner_extend_navigation_course(
     navigation_node $navigation,
     stdClass $course,
