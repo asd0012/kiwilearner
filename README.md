@@ -60,5 +60,3 @@
     e.g. moodle-2025-12-07_230101.sql
 4. Run **make restore STAMP=xxxx-xx-xx_xxxxxx** to restore your config.
     e.g make restore STAMP=2025-12-07_230101
-
-

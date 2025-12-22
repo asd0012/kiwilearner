@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/kiwilearner/db" VERSION="2025121301" COMMENT="KiwiLearner XP Plugin DB Schema">
+
+    <TABLES>
+
+        <!-- ========================================================= -->
+        <!-- TABLE 1: local_kiwilearner_goal                           -->
+        <!-- ========================================================= -->
+        <TABLE NAME="local_kiwilearner_goal" COMMENT="Daily XP target per user per course">
+            <FIELDS>
+                <FIELD NAME="id"           TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+                <FIELD NAME="userid"       TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="courseid"     TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="xp_target"    TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="timecreated"  TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="timemodified" TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+            </FIELDS>
+
+            <KEYS>
+                <KEY NAME="primary"    TYPE="primary" FIELDS="id" />
+                <KEY NAME="userid_fk"  TYPE="foreign" FIELDS="userid"   REFTABLE="user"   REFFIELDS="id" />
+                <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id" />
+            </KEYS>
+
+            <INDEXES>
+                <INDEX NAME="user_course_unique" UNIQUE="true" FIELDS="userid, courseid" />
+            </INDEXES>
+        </TABLE>
+
+        <!-- ========================================================= -->
+        <!-- TABLE 2: local_kiwilearner_question_xp                    -->
+        <!-- ========================================================= -->
+        <TABLE NAME="local_kiwilearner_question_xp" COMMENT="XP value per question per course">
+            <FIELDS>
+                <FIELD NAME="id"           TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+                <FIELD NAME="courseid"     TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="questionid"   TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <!-- <FIELD NAME="xpvalue"      TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" /> -->
+                <FIELD NAME="xp_participation"      TYPE="int"   LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" />
+                <FIELD NAME="xp_correct"   TYPE="int"   LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" />
+
+                <FIELD NAME="enabled"      TYPE="int"   LENGTH="1"  NOTNULL="true" DEFAULT="1" SEQUENCE="false" />
+                <FIELD NAME="timecreated"  TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="timemodified" TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+            </FIELDS>
+
+            <KEYS>
+                <KEY NAME="primary"       TYPE="primary" FIELDS="id" />
+                <KEY NAME="courseid_fk"   TYPE="foreign" FIELDS="courseid"   REFTABLE="course"   REFFIELDS="id" />
+                <KEY NAME="questionid_fk" TYPE="foreign" FIELDS="questionid" REFTABLE="question" REFFIELDS="id" />
+            </KEYS>
+
+            <INDEXES>
+                <INDEX NAME="question_unique" UNIQUE="true" FIELDS="questionid" />
+            </INDEXES>
+        </TABLE>
+
+        <!-- ========================================================= -->
+        <!-- TABLE 3: local_kiwilearner_xp_event                       -->
+        <!-- ========================================================= -->
+        <TABLE NAME="local_kiwilearner_xp_event" COMMENT="XP ledger events per student per course">
+            <FIELDS>
+                <FIELD NAME="id"          TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+                <FIELD NAME="userid"      TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="courseid"    TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="questionid"  TYPE="int"   LENGTH="10" NOTNULL="false" SEQUENCE="false" />
+                <FIELD NAME="attemptid"   TYPE="int"   LENGTH="10" NOTNULL="false" SEQUENCE="false" />
+                <FIELD NAME="xpdelta"     TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="reason"      TYPE="char"  LENGTH="255" NOTNULL="false" SEQUENCE="false" />
+                <FIELD NAME="createdby"   TYPE="int"   LENGTH="10" NOTNULL="false" SEQUENCE="false" />
+                <FIELD NAME="timecreated" TYPE="int"   LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+            </FIELDS>
+
+            <KEYS>
+                <KEY NAME="primary"       TYPE="primary" FIELDS="id" />
+                <KEY NAME="userid_fk"     TYPE="foreign" FIELDS="userid"    REFTABLE="user"   REFFIELDS="id" />
+                <KEY NAME="courseid_fk"   TYPE="foreign" FIELDS="courseid"  REFTABLE="course" REFFIELDS="id" />
+                <KEY NAME="questionid_fk" TYPE="foreign" FIELDS="questionid" REFTABLE="question" REFFIELDS="id" />
+            </KEYS>
+
+            <INDEXES>
+                <INDEX NAME="user_course_idx" UNIQUE="false" FIELDS="userid, courseid" />
+                <INDEX NAME="attemptid_idx"   UNIQUE="false" FIELDS="attemptid" />
+            </INDEXES>
+        </TABLE>
+
+        <!-- ========================================================= -->
+        <!-- TABLE 4: local_kiwilearner_xp_summary_day                 -->
+        <!-- ========================================================= -->
+        <TABLE NAME="local_kiwilearner_xp_summary_day" COMMENT="Daily XP totals per user per course">
+            <FIELDS>
+                <FIELD NAME="id"           TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+                <FIELD NAME="userid"       TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="courseid"     TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="daystart"     TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="xptotal"      TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="timecreated"  TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="timemodified" TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+            </FIELDS>
+
+            <KEYS>
+                <KEY NAME="primary"     TYPE="primary" FIELDS="id" />
+                <KEY NAME="userid_fk"   TYPE="foreign" FIELDS="userid"   REFTABLE="user"   REFFIELDS="id" />
+                <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id" />
+            </KEYS>
+
+            <INDEXES>
+                <INDEX NAME="user_course_day_unique" UNIQUE="true" FIELDS="userid, courseid, daystart" />
+            </INDEXES>
+        </TABLE>
+
+        <!-- ========================================================= -->
+        <!-- TABLE 5: local_kiwilearner_notify_pref                    -->
+        <!-- ========================================================= -->
+        <TABLE NAME="local_kiwilearner_notify_pref" COMMENT="Per-user notification settings">
+            <FIELDS>
+                <FIELD NAME="id"            TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+                <FIELD NAME="userid"        TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="notifyenabled" TYPE="int" LENGTH="1"  NOTNULL="true" DEFAULT="1" SEQUENCE="false" />
+                <FIELD NAME="lastnotified"  TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" />
+                <FIELD NAME="timecreated"   TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="timemodified"  TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+            </FIELDS>
+
+            <KEYS>
+                <KEY NAME="primary"   TYPE="primary" FIELDS="id" />
+                <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id" />
+            </KEYS>
+
+            <INDEXES>
+                <INDEX NAME="userid_unique" UNIQUE="true" FIELDS="userid" />
+            </INDEXES>
+        </TABLE>
+
+    </TABLES>
+
+</XMLDB>

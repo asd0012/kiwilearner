@@ -4,7 +4,38 @@ moodle-docker/local.yml
 moodle-docker/docker-compose.override.yml
 moodle-docker/vendor/
 moodle-docker/node_modules/
+moodle-docker/local.env 
+
+
+# ---- Runtime / container outputs (don’t commit) ----
+moodle/public/**
+moodle/local/**
+moodle-docker/test_files/**
+moodle-docker/**/moodledata/
+moodle-docker/**/dbdata/
+moodle-docker/Makefile.swp
+moodle/local/**
+moodle-docker/local.env
+moodle-docker/exttests/
+moodle-docker/tests/apache2_ports.conf
+
+# BUT keep our plugin tracked
+#!moodle/local/kiwilearner/
+#!moodle/local/kiwilearner/**
+!moodle/public/local/
+!moodle/public/local/kiwilearner/
+!moodle/public/local/kiwilearner/**
+
+# third-party plugins you installed for testing (XP, etc.)
+moodle/public/blocks/**
+moodle/blocks/**
+
+# editors / OS junk
+*.swp
+*.swo
+*.DS_Store
 
 # Ignore Moodle data files
 moodle/config.php
 moodle/moodledata/
+docker-compose.yml

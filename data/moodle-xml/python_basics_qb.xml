@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+
+<!-- 5 Questions: Features of Python & Python tokens -->
+<question type="multichoice">
+    <name><text>Python is ...?</text></name>
+    <questiontext format="html"><text><![CDATA[Python is a ... language.]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>High-level</text></answer>
+    <answer fraction="0"><text>Low-level</text></answer>
+    <answer fraction="0"><text>Assembly</text></answer>
+    <answer fraction="0"><text>Machine code</text></answer>
+    <tags><tag><text>features</text></tag><tag><text>python_tokens</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>Python is case ...?</text></name>
+    <questiontext format="html"><text><![CDATA[Python identifiers are case ...?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>sensitive</text></answer>
+    <answer fraction="0"><text>insensitive</text></answer>
+    <answer fraction="0"><text>partially sensitive</text></answer>
+    <answer fraction="0"><text>None of these</text></answer>
+    <tags><tag><text>python_tokens</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>Python literal</text></name>
+    <questiontext format="html"><text><![CDATA[Which of these is a Python literal?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>42</text></answer>
+    <answer fraction="0"><text>variable</text></answer>
+    <answer fraction="0"><text>function</text></answer>
+    <answer fraction="0"><text>class</text></answer>
+    <tags><tag><text>python_tokens</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>Assignment operator</text></name>
+    <questiontext format="html"><text><![CDATA[Which symbol is used for assignment in Python?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>=</text></answer>
+    <answer fraction="0"><text>==</text></answer>
+    <answer fraction="0"><text>:</text></answer>
+    <answer fraction="0"><text>+</text></answer>
+    <tags><tag><text>python_tokens</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>Python typing</text></name>
+    <questiontext format="html"><text><![CDATA[Python is dynamically or statically typed?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>Dynamically typed</text></answer>
+    <answer fraction="0"><text>Statically typed</text></answer>
+    <answer fraction="0"><text>Weakly typed</text></answer>
+    <answer fraction="0"><text>None of these</text></answer>
+    <tags><tag><text>features</text></tag></tags>
+</question>
+
+<!-- 10 Questions: Strings -->
+<question type="multichoice">
+    <name><text>Valid string</text></name>
+    <questiontext format="html"><text><![CDATA[Which of the following is a valid string in Python?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>"Hello"</text></answer>
+    <answer fraction="0"><text>'Hello</text></answer>
+    <answer fraction="0"><text>Hello</text></answer>
+    <answer fraction="0"><text>None</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>First character</text></name>
+    <questiontext format="html"><text><![CDATA[What is the first character of s = "Python"?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>P</text></answer>
+    <answer fraction="0"><text>y</text></answer>
+    <answer fraction="0"><text>n</text></answer>
+    <answer fraction="0"><text>o</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>String concatenation</text></name>
+    <questiontext format="html"><text><![CDATA[What is the result of "Hello" + "World"?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>HelloWorld</text></answer>
+    <answer fraction="0"><text>Hello World</text></answer>
+    <answer fraction="0"><text>Error</text></answer>
+    <answer fraction="0"><text>"Hello" + "World"</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>String length</text></name>
+    <questiontext format="html"><text><![CDATA[len("Python") returns?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>6</text></answer>
+    <answer fraction="0"><text>5</text></answer>
+    <answer fraction="0"><text>7</text></answer>
+    <answer fraction="0"><text>Error</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>String slicing</text></name>
+    <questiontext format="html"><text><![CDATA["Python"[0:4]?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>Pyth</text></answer>
+    <answer fraction="0"><text>ytho</text></answer>
+    <answer fraction="0"><text>Py</text></answer>
+    <answer fraction="0"><text>on</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>String method upper</text></name>
+    <questiontext format="html"><text><![CDATA[What does "python".upper() return?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>PYTHON</text></answer>
+    <answer fraction="0"><text>python</text></answer>
+    <answer fraction="0"><text>Python</text></answer>
+    <answer fraction="0"><text>Error</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>String method strip</text></name>
+    <questiontext format="html"><text><![CDATA[What does "  Python  ".strip() return?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>Python</text></answer>
+    <answer fraction="0"><text>  Python</text></answer>
+    <answer fraction="0"><text>Python  </text></answer>
+    <answer fraction="0"><text>  Python  </text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>String find method</text></name>
+    <questiontext format="html"><text><![CDATA["Python".find('t') returns?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>2</text></answer>
+    <answer fraction="0"><text>1</text></answer>
+    <answer fraction="0"><text>3</text></answer>
+    <answer fraction="0"><text>Error</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>String split method</text></name>
+    <questiontext format="html"><text><![CDATA["a,b,c".split(',') returns?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>['a','b','c']</text></answer>
+    <answer fraction="0"><text>'a,b,c'</text></answer>
+    <answer fraction="0"><text>('a','b','c')</text></answer>
+    <answer fraction="0"><text>Error</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>String membership</text></name>
+    <questiontext format="html"><text><![CDATA['y' in 'Python'?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>True</text></answer>
+    <answer fraction="0"><text>False</text></answer>
+    <answer fraction="0"><text>Error</text></answer>
+    <answer fraction="0"><text>None</text></answer>
+    <tags><tag><text>strings</text></tag></tags>
+</question>
+
+<!-- 15 Questions: Lists -->
+<question type="multichoice">
+    <name><text>Appending an item to a list</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3], how to append 4 to the list?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l.append(4)</text></answer>
+    <answer fraction="0"><text>l.add(4)</text></answer>
+    <answer fraction="0"><text>l.insert(4)</text></answer>
+    <answer fraction="0"><text>l.push(4)</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 2: Inserting an item at a specific index -->
+<question type="multichoice">
+    <name><text>Inserting an item at a specific index</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3], how to insert 5 at index 1?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l.insert(1, 5)</text></answer>
+    <answer fraction="0"><text>l.append(5, 1)</text></answer>
+    <answer fraction="0"><text>l.add(1, 5)</text></answer>
+    <answer fraction="0"><text>l[1] = 5</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 3: Removing an item from the list -->
+<question type="multichoice">
+    <name><text>Removing an item from the list</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3, 4], how to remove item '2'?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l.remove(2)</text></answer>
+    <answer fraction="0"><text>l.delete(2)</text></answer>
+    <answer fraction="0"><text>l.pop(2)</text></answer>
+    <answer fraction="0"><text>l.delete_item(2)</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 4: Popping an item from the list -->
+<question type="multichoice">
+    <name><text>Popping an item from the list</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3, 4], how to remove and return the last item?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l.pop()</text></answer>
+    <answer fraction="0"><text>l.remove()</text></answer>
+    <answer fraction="0"><text>l.delete()</text></answer>
+    <answer fraction="0"><text>l.remove_last()</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 5: List slicing -->
+<question type="multichoice">
+    <name><text>List slicing</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3, 4, 5], how to get the sublist [2, 3, 4]?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l[1:4]</text></answer>
+    <answer fraction="0"><text>l[2:3]</text></answer>
+    <answer fraction="0"><text>l[1:3]</text></answer>
+    <answer fraction="0"><text>l[2:5]</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 6: Getting the length of a list -->
+<question type="multichoice">
+    <name><text>Getting the length of a list</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3, 4], how to find the number of items in the list?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>len(l)</text></answer>
+    <answer fraction="0"><text>l.length()</text></answer>
+    <answer fraction="0"><text>l.size()</text></answer>
+    <answer fraction="0"><text>len(l.items)</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 7: Iterating over a list -->
+<question type="multichoice">
+    <name><text>Iterating over a list</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3, 4], how to print each item in the list?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>for item in l: print(item)</text></answer>
+    <answer fraction="0"><text>for item in l: print(item, end=" ")</text></answer>
+    <answer fraction="0"><text>l.foreach(print)</text></answer>
+    <answer fraction="0"><text>for print(item) in l</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 8: Using a list comprehension -->
+<question type="multichoice">
+    <name><text>Using a list comprehension</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3, 4], how to create a new list with each item squared?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>[x**2 for x in l]</text></answer>
+    <answer fraction="0"><text>[x*2 for x in l]</text></answer>
+    <answer fraction="0"><text>[x**2 in l]</text></answer>
+    <answer fraction="0"><text>[x*x for x in l]</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 9: Checking if a list is empty -->
+<question type="multichoice">
+    <name><text>Checking if a list is empty</text></name>
+    <questiontext format="html"><text><![CDATA[l = [], how to check if the list is empty?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>not l</text></answer>
+    <answer fraction="0"><text>l.empty()</text></answer>
+    <answer fraction="0"><text>l.is_empty()</text></answer>
+    <answer fraction="0"><text>len(l) == 0</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 10: Concatenating two lists -->
+<question type="multichoice">
+    <name><text>Concatenating two lists</text></name>
+    <questiontext format="html"><text><![CDATA[l1 = [1, 2], l2 = [3, 4], how to concatenate them?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l1 + l2</text></answer>
+    <answer fraction="0"><text>l1.append(l2)</text></answer>
+    <answer fraction="0"><text>l1.extend(l2)</text></answer>
+    <answer fraction="0"><text>l1.concat(l2)</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 11: Reversing a list -->
+<question type="multichoice">
+    <name><text>Reversing a list</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3], how to reverse the list?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l.reverse()</text></answer>
+    <answer fraction="0"><text>l.reversed()</text></answer>
+    <answer fraction="0"><text>l.flip()</text></answer>
+    <answer fraction="0"><text>l.invert()</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 12: Sorting a list -->
+<question type="multichoice">
+    <name><text>Sorting a list</text></name>
+    <questiontext format="html"><text><![CDATA[l = [3, 1, 2], how to sort the list in ascending order?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l.sort()</text></answer>
+    <answer fraction="0"><text>sorted(l)</text></answer>
+    <answer fraction="0"><text>l.order()</text></answer>
+    <answer fraction="0"><text>l.arrange()</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 13: Removing duplicates from a list -->
+<question type="multichoice">
+    <name><text>Removing duplicates from a list</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 2, 3], how to remove duplicates?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>list(set(l))</text></answer>
+    <answer fraction="0"><text>l.remove_duplicates()</text></answer>
+    <answer fraction="0"><text>l.distinct()</text></answer>
+    <answer fraction="0"><text>l.unique()</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+  <!-- Question 14: Finding the index of an item -->
+<question type="multichoice">
+    <name><text>Finding the index of an item</text></name>
+    <questiontext format="html"><text><![CDATA[l = [1, 2, 3, 4], how to find the index of item '3'?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>l.index(3)</text></answer>
+    <answer fraction="0"><text>l.find(3)</text></answer>
+    <answer fraction="0"><text>l.search(3)</text></answer>
+    <answer fraction="0"><text>l.position(3)</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>Access list element</text></name>
+    <questiontext format="html"><text><![CDATA[lst = [1,2,3], second element?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>lst[1]</text></answer>
+    <answer fraction="0"><text>lst[2]</text></answer>
+    <answer fraction="0"><text>lst(1)</text></answer>
+    <answer fraction="0"><text>lst{1}</text></answer>
+    <tags><tag><text>lists</text></tag></tags>
+</question>
+
+<!-- Remaining 14 list questions: covering append, insert, remove, pop, slicing, length, iteration, etc., all tagged <lists> -->
+
+<!-- 10 Questions: Tuples -->
+<question type="multichoice">
+    <name><text>Tuple immutability</text></name>
+    <questiontext format="html"><text><![CDATA[Which is true about tuples?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>Immutable</text></answer>
+    <answer fraction="0"><text>Mutable</text></answer>
+    <answer fraction="0"><text>Cannot store values</text></answer>
+    <answer fraction="0"><text>Dynamic</text></answer>
+    <tags><tag><text>tuples</text></tag></tags>
+</question>
+
+<!-- Remaining 9 tuple questions: indexing, concatenation, nesting, count, length, etc., all tagged <tuples> -->
+
+<!-- 10 Questions: Dictionaries -->
+<!-- Question 1 -->
+<question type="multichoice">
+    <name><text>Access dictionary value</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a':1,'b':2}, value for key 'a'?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>d['a']</text></answer>
+    <answer fraction="0"><text>d(a)</text></answer>
+    <answer fraction="0"><text>d.a</text></answer>
+    <answer fraction="0"><text>None</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+  <!-- Question 2 -->
+<question type="multichoice">
+    <name><text>Adding a key-value pair to a dictionary</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a': 1}, how do you add 'b': 2 to it?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>d['b'] = 2</text></answer>
+    <answer fraction="0"><text>d.add('b', 2)</text></answer>
+    <answer fraction="0"><text>d.append('b', 2)</text></answer>
+    <answer fraction="0"><text>d = {'a': 1, 'b': 2}</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+  <!-- Question 3 -->
+<question type="multichoice">
+    <name><text>Checking if a key exists in a dictionary</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a': 1, 'b': 2}, how to check if key 'b' exists?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>'b' in d</text></answer>
+    <answer fraction="0"><text>'b' == d</text></answer>
+    <answer fraction="0"><text>d.has_key('b')</text></answer>
+    <answer fraction="0"><text>None</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+  <!-- Question 4 -->
+<question type="multichoice">
+    <name><text>Get a value using the get() method</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a': 1, 'b': 2}, how to get value for key 'a' using get()?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>d.get('a')</text></answer>
+    <answer fraction="0"><text>d['a']</text></answer>
+    <answer fraction="0"><text>d.a</text></answer>
+    <answer fraction="0"><text>d['get']('a')</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+  <!-- Question 5 -->
+<question type="multichoice">
+    <name><text>Removing a key-value pair</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a': 1, 'b': 2}, how do you remove key 'a'?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>del d['a']</text></answer>
+    <answer fraction="0"><text>d.pop('a')</text></answer>
+    <answer fraction="0"><text>d.remove('a')</text></answer>
+    <answer fraction="0"><text>None</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+  <!-- Question 6 -->
+<question type="multichoice">
+    <name><text>Dictionary method to return all keys</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a': 1, 'b': 2}, how do you get all the keys?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>d.keys()</text></answer>
+    <answer fraction="0"><text>d.all_keys()</text></answer>
+    <answer fraction="0"><text>d.get_keys()</text></answer>
+    <answer fraction="0"><text>d.get('keys')</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+  <!-- Question 7 -->
+<question type="multichoice">
+    <name><text>Dictionary method to return all values</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a': 1, 'b': 2}, how do you get all the values?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>d.values()</text></answer>
+    <answer fraction="0"><text>d.all_values()</text></answer>
+    <answer fraction="0"><text>d.get_values()</text></answer>
+    <answer fraction="0"><text>d['values']()</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+  <!-- Question 8 -->
+<question type="multichoice">
+    <name><text>Clearing all items from a dictionary</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a': 1, 'b': 2}, how to clear all items from the dictionary?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>d.clear()</text></answer>
+    <answer fraction="0"><text>d.empty()</text></answer>
+    <answer fraction="0"><text>d.delete()</text></answer>
+    <answer fraction="0"><text>None</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+  <!-- Question 9 -->
+<question type="multichoice">
+    <name><text>Creating an empty dictionary</text></name>
+    <questiontext format="html"><text><![CDATA[How do you create an empty dictionary in Python?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>{}</text></answer>
+    <answer fraction="0"><text>dict()</text></answer>
+    <answer fraction="0"><text>empty()</text></answer>
+    <answer fraction="0"><text>None</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+<question type="multichoice">
+    <name><text>Access dictionary value</text></name>
+    <questiontext format="html"><text><![CDATA[d = {'a':1,'b':2}, value for key 'a'?]]></text></questiontext>
+    <defaultgrade>1</defaultgrade>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100"><text>d['a']</text></answer>
+    <answer fraction="0"><text>d(a)</text></answer>
+    <answer fraction="0"><text>d.a</text></answer>
+    <answer fraction="0"><text>None</text></answer>
+    <tags><tag><text>dictionaries</text></tag></tags>
+</question>
+
+</quiz>
