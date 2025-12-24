@@ -1,12 +1,17 @@
+<div id="kiwilearner_dailyquiz">
+
+{{^summary}}
 <form method="post" action="{{{posturl}}}">
     <input type="hidden" name="id" value="{{courseid}}">
     <input type="hidden" name="sesskey" value="{{sesskey}}">
+    <input type="hidden" name="submitted" value="1">
+
 
     <h3>{{quizname}}</h3>
 
     {{#questions}}
     <div class="question">
-        <p><strong>Q{{@index}}: {{text}}</strong></p>
+        <p><strong>Q{{index}}:</strong> {{text}}</p>
         {{#options}}
         <div class="answer">
             <label>
@@ -17,8 +22,42 @@
     </div>
     {{/questions}}
 
-    <button type="submit" name="submitquiz" class="btn btn-primary">Submit Quiz</button>
+    <button type="submit" name="submitquiz" value="1" class="btn btn-primary">Submit Quiz</button>
+
 </form>
+{{/summary}}
+
+{{#summary}}
+<div class="card mt-3" id="kiwilearner_dailyquiz_summary">
+  <div class="card-body">
+    <h4 class="card-title">{{quizname}} — Summary</h4>
+    <p class="card-text">
+    XP earned today: <strong>{{correctcount}}</strong>
+    </p>
+
+    {{#hasitems}}
+    <ul class="list-group">
+      {{#items}}
+      <li class="list-group-item">
+        <div>
+          <strong>{{label}}</strong>
+          {{#iscorrect}} <span class="badge bg-success ms-2">Correct</span>{{/iscorrect}}
+          {{#isincorrect}} <span class="badge bg-danger ms-2">Incorrect</span>{{/isincorrect}}
+        </div>
+
+        <div class="small mt-1">
+          Your: <code>{{youranswer}}</code> | Correct: <code>{{correctanswer}}</code>
+          {{#isincorrect}}
+            {{#remediationurl}} | <a href="{{remediationurl}}">Review</a>{{/remediationurl}}
+          {{/isincorrect}}
+        </div>
+      </li>
+      {{/items}}
+    </ul>
+    {{/hasitems}}
+  </div>
+</div>
+{{/summary}}
 
 {{#results}}
 <h4>Your Score: {{total}}</h4>
@@ -28,3 +67,6 @@
     {{/questions}}
 </ul>
 {{/results}}
+
+</div>
+

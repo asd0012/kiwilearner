@@ -16,23 +16,41 @@ class block_kiwilearner_dailyquiz extends block_base {
             return $this->content;
         }
 
-        require_once(__DIR__ . '/lib.php');
-
-
         $this->content = new stdClass();
         $this->content->text = '';
         $this->content->footer = '';
 
-        // Always use an explicit course URL (prevents action="/course/view.php" without id).
-        $courseurl = new moodle_url('/course/view.php', ['id' => $COURSE->id]);
+	require_once(__DIR__ . '/lib.php');
 
-        // ------------
-        // (A) Handle quiz submit FIRST (this POST does NOT include generator fields).
-        // ------------
-        $submitquiz = optional_param('submitquiz', 0, PARAM_BOOL);
-        if ($submitquiz) {
+	// -------------------------
+	// (0) Common vars (do this early)
+	// -------------------------
+	
+	$courseid  = (int)$COURSE->id;
+	$courseurl = new moodle_url('/course/view.php', ['id' => $courseid]);
+	$posturl   = $courseurl->out(false);
+
+	$daykey  = userdate(time(), '%Y%m%d');
+	$prefkey = 'block_kiwilearner_dailyquiz_summary_' . $courseid;
+
+	// =========================================================
+	// (1) Load saved summary at the start of the request (GET path)
+	//     Put it HERE: before any submit/generate handling.
+	// =========================================================
+	
+	$savedsummary = json_decode(get_user_preferences($prefkey, ''), true);
+	if (!is_array($savedsummary) || (($savedsummary['daykey'] ?? '') !== $daykey)) {
+		$savedsummary = null;
+	}
+
+	// =========================================================
+	// (2) On submit, compute + store (POST path)
+	//     Put it HERE: right after reading submitquiz.
+	// =========================================================
+
+	$submitquiz = optional_param('submitquiz', 0, PARAM_BOOL);
+	if ($submitquiz) {
             require_sesskey();
-
             // Get the previously generated question ids from session.
             $storekey = 'block_kiwilearner_dailyquiz_' . (int)$COURSE->id;
             $qids = $SESSION->$storekey['qids'] ?? [];
@@ -48,20 +66,64 @@ class block_kiwilearner_dailyquiz extends block_base {
                     $ans = optional_param($paramname, null, PARAM_INT);
                     if ($ans !== null) {
                         $answers[(int)$qid] = $ans;
-                    }
-                }
+		    }
+		}
 
-                block_kiwilearner_dailyquiz_submit_attempt($USER->id, $answers);
-                $results = block_kiwilearner_dailyquiz_get_results($USER->id);
+		block_kiwilearner_dailyquiz_submit_attempt($USER->id, $answers);
+		$results = block_kiwilearner_dailyquiz_get_results($USER->id);
 
-                $dataresult = (object)[
-                    'quizname'  => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
-                    'results'   => $results,
-                    'posturl'   => $courseurl->out(false),
-                    'courseid'  => $COURSE->id,
-                    'sesskey'   => sesskey(),
-                    'questions' => [], // optional; results section shows score
-                ];
+		// Build inline summary data from $results.
+		$items = [];
+		$correctcount = 0;
+		$questions = $results->questions ?? ($results['questions'] ?? []);
+
+		foreach ($questions as $q) {
+			$qtext   = is_object($q) ? ($q->text ?? '')   : ($q['text'] ?? '');
+			$ans     = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
+			$correct = is_object($q) ? ($q->correct ?? ''): ($q['correct'] ?? '');
+
+			$iscorrect = (trim((string)$ans) !== '' && trim((string)$ans) === trim((string)$correct));
+			if ($iscorrect) {
+				$correctcount++;
+			}
+
+			$items[] = [
+				'label' => $qtext,
+				'youranswer' => $ans,
+				'correctanswer' => $correct,
+				'iscorrect' => $iscorrect,
+				'isincorrect' => !$iscorrect,
+				// for now: link back to course page (you already have $courseurl / $posturl)
+				'remediationurl' => !$iscorrect ? $posturl : '',
+			];
+		}
+
+		$questioncount = count($items);
+		$scorepercent = $questioncount ? round(($correctcount / $questioncount) * 100, 1) : 0.0;
+
+		$summarydata = [
+			'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
+			'questioncount' => $questioncount,
+			'correctcount'  => $correctcount,
+			'scorepercent'  => $scorepercent,
+			'daykey'        => $daykey,
+			'items'         => $items,
+			'hasitems'      => ($questioncount > 0),
+		];
+		 
+		set_user_preference($prefkey, json_encode($summarydata));
+		$savedsummary = $summarydata;
+
+
+		$dataresult = (object)[
+			'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
+			'results'  => $results,
+			'posturl'  => $posturl,
+			'courseid' => $COURSE->id,
+			'sesskey'  => sesskey(),
+			'questions'=> [],
+			'summary'  => $summarydata,   // ✅ attach to mustache
+		];
 
                 $this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $dataresult);
                 return $this->content;
@@ -95,21 +157,37 @@ class block_kiwilearner_dailyquiz extends block_base {
                 return $this->content;
             }
 
-            $quizdata = (object)[
-                'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
-                'questions'=> $questions,
-                'posturl'  => $courseurl->out(false),
-                'courseid' => $COURSE->id,
-                'sesskey'  => sesskey(),
-            ];
+	    $quizdata = (object)[
+		    'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
+		    'questions'=> $questions,
+		    'posturl'  => $posturl,
+		    'courseid' => $COURSE->id,
+		    'sesskey'  => sesskey(),
+		    'summary'  => null,
+	    ];
 
             $this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $quizdata);
             return $this->content;
-        }
+	}
 
-        // Default: show generator form.
-        $this->content->text .= $mform->render();
-        return $this->content;
+	if (!empty($savedsummary) ) {
+		$data = (object)[
+			'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
+			'posturl'  => $posturl,
+			'courseid' => $courseid,
+			'sesskey'  => sesskey(),
+			'questions'=> [],
+			'summary'  => $savedsummary,
+		];
+
+		$this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $data);
+
+		return $this->content;
+	}
+
+	// Default: show generator form.
+	$this->content->text .= $mform->render();
+	return $this->content;
     }
 
 }
