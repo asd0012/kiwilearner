@@ -20,11 +20,14 @@ moodle-docker/exttests/
 moodle-docker/tests/apache2_ports.conf
 
 # BUT keep our plugin tracked
-#!moodle/local/kiwilearner/
-#!moodle/local/kiwilearner/**
+# Re-allow directory traversal
+!moodle/public/
+!moodle/public/mod/
 !moodle/public/local/
 !moodle/public/local/kiwilearner/
 !moodle/public/local/kiwilearner/**
+!moodle/public/mod/kiwilearner_interactivevideo/
+!moodle/public/mod/kiwilearner_interactivevideo/**
 
 # third-party plugins you installed for testing (XP, etc.)
 moodle/public/blocks/**
