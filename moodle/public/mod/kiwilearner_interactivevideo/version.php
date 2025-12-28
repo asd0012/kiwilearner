@@ -24,11 +24,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2025120200;
+$plugin->version = 2025122900;
 $plugin->requires = TODO;
 $plugin->supported = TODO;   // Available as of Moodle 3.9.0 or later.
 $plugin->incompatible = TODO;   // Available as of Moodle 3.9.0 or later.
-$plugin->component = 'mod_kiwilearner_segvideo'; // Full name of the plugin (used for diagnostics)
+$plugin->component = 'mod_kiwilearner_interactivevideo'; // Full name of the plugin (used for diagnostics)
 $plugin->maturity = MATURITY_STABLE;
 $plugin->release = 'TODO';
 
