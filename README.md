@@ -38,3 +38,25 @@
 
 4. To run the docker, go to KiwiLearner root directory and run:
     `sudo make up`
+
+5. Use adminer to access the database: http://localhost:[port]/adminer.php
+
+    Below is the default database settings:
+
+    | Item          | Value                  |
+    |---------------|------------------------|
+    | Server        | localhost              |
+    | Username      | moodle                 |
+    | Password      | m@0dl3ing              |
+    | Database      | moodle                 |
+
+### Steps for backup and restore config
+
+1. Run **make backup** in kiwilearner folder
+
+2. Kiwi-backups folder will be created for your config files
+
+3. The timestamp will be the end of your config files in kiwi-backups folder.
+    e.g. moodle-2025-12-07_230101.sql
+4. Run **make restore STAMP=xxxx-xx-xx_xxxxxx** to restore your config.
+    e.g make restore STAMP=2025-12-07_230101

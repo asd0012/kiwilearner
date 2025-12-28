@@ -1,0 +1,30 @@
+<form method="post" action="{{{posturl}}}">
+    <input type="hidden" name="id" value="{{courseid}}">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+    <h3>{{quizname}}</h3>
+
+    {{#questions}}
+    <div class="question">
+        <p><strong>Q{{@index}}: {{text}}</strong></p>
+        {{#options}}
+        <div class="answer">
+            <label>
+                <input type="radio" name="q{{../id}}" value="{{id}}"> {{text}}
+            </label>
+        </div>
+        {{/options}}
+    </div>
+    {{/questions}}
+
+    <button type="submit" name="submitquiz" class="btn btn-primary">Submit Quiz</button>
+</form>
+
+{{#results}}
+<h4>Your Score: {{total}}</h4>
+<ul>
+    {{#questions}}
+    <li>{{text}} — Your answer: {{answer}} — Correct: {{correct}}</li>
+    {{/questions}}
+</ul>
+{{/results}}
