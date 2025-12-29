@@ -22,4 +22,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'KiwiLearner - Interactive Video';
+$string['pluginname'] = 'KiwiLearner Interactive Video';
+$string['modulename'] = 'KiwiLearner Interactive Video';
+$string['modulenameplural'] = 'KiwiLearner Interactive Videos';
+$string['h5pcontentid'] = 'H5P content id';
+$string['h5pcontentid_help'] = 'Enter the core H5P content id (from Moodle H5P content bank).';
