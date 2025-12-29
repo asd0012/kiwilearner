@@ -81,6 +81,66 @@ class xp_engine {
     }
 
     /**
+     * Award XP for a correct H5P Interactive Video interaction once per day.
+     *
+     * We store the H5P "question id" (subContentId) inside reason:
+     *   h5piv_correct:<subcontentid>
+     *
+     * @param int $userid
+     * @param int $courseid
+     * @param string $subcontentid H5P subContentId (stable per interaction)
+     * @param int $xpdelta XP to award
+     * @return bool true if awarded, false if already awarded today
+     */
+    public static function award_h5p_correct_once_per_day(
+        int $userid,
+        int $courseid,
+        string $subcontentid,
+        int $xpdelta = 1
+    ): bool {
+        global $DB;
+
+        $subcontentid = trim($subcontentid);
+        if ($userid <= 0 || $courseid <= 0 || $subcontentid === '' || $xpdelta === 0) {
+            return false;
+        }
+
+        $now = time();
+        $daystart = usergetmidnight($now);
+        $dayend   = $daystart + DAYSECS;
+
+        $reason = 'h5piv_correct:' . $subcontentid;
+
+        // Enforce once/day per user per interaction.
+        $exists = $DB->record_exists_select(
+            'local_kiwilearner_xp_event',
+            'userid = ? AND courseid = ? AND reason = ? AND timecreated >= ? AND timecreated < ?',
+            [$userid, $courseid, $reason, $daystart, $dayend]
+        );
+
+        if ($exists) {
+            return false;
+        }
+
+        // Insert ledger.
+        $DB->insert_record('local_kiwilearner_xp_event', (object)[
+            'userid'      => $userid,
+            'courseid'    => $courseid,
+            'questionid'  => null, // H5P interaction is not Moodle question.id
+            'attemptid'   => null,
+            'xpdelta'     => $xpdelta,
+            'reason'      => $reason,
+            'createdby'   => null,
+            'timecreated' => $now,
+        ]);
+
+        // Update daily summary (same-day bucket).
+        self::update_daily_summary($userid, $courseid, $xpdelta, $daystart, $now);
+
+        return true;
+    }
+
+    /**
      * Update daily XP summary table.
      */
     private static function update_daily_summary(int $userid, int $courseid, int $xp): void {
