@@ -1,5 +1,7 @@
 <div id="kiwilearner_dailyquiz">
 
+{{> block_kiwilearner_dailyquiz/feedback}}
+
 {{^summary}}
 <form method="post" action="{{{posturl}}}">
     <input type="hidden" name="id" value="{{courseid}}">
@@ -32,7 +34,8 @@
   <div class="card-body">
     <h4 class="card-title">{{quizname}} — Summary</h4>
     <p class="card-text">
-    XP earned today: <strong>{{questioncount}} / {{questioncount}}</strong>
+    	XP earned today: <strong>{{xp_earned}} / {{questioncount}}</strong>
+	{{#isunknown}}<span class="badge bg-secondary text-white ms-2">Pending</span>{{/isunknown}}
     </p>
 
     {{#hasitems}}
