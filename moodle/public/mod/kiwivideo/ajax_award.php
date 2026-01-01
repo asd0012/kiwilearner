@@ -13,7 +13,7 @@ list($course, $cm) = get_course_and_cm_from_cmid($cmid);
 $context = context_module::instance($cm->id);
 
 // Adjust capability to whatever your module defines; view is typical.
-require_capability('mod/kiwilearner_interactivevideo:view', $context);
+require_capability('mod/kiwivideo:view', $context);
 
 if (!$success) {
     echo json_encode(['ok' => true, 'awarded' => false, 'reason' => 'not_success']);

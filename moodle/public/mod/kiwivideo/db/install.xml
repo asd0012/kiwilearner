@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/kiwilearner_interactivevideo/db" VERSION="2025123000" COMMENT="KiwiLearner Interactive Video">
+<XMLDB PATH="mod/kiwivideo/db" VERSION="2025123000" COMMENT="KiwiLearner Interactive Video">
   <TABLES>
-    <TABLE NAME="kiwilearner_interactivevideo" COMMENT="Activity instances">
+    <TABLE NAME="kiwivideo" COMMENT="Activity instances">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true"/>

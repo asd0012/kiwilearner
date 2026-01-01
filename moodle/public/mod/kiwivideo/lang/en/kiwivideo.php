@@ -27,3 +27,4 @@ $string['modulename'] = 'KiwiLearner Interactive Video';
 $string['modulenameplural'] = 'KiwiLearner Interactive Videos';
 $string['h5pcontentid'] = 'H5P content id';
 $string['h5pcontentid_help'] = 'Enter the core H5P content id (from Moodle H5P content bank).';
+$string['noinstances'] = 'No KiwiLearner Interactive Video activities found in this course.';

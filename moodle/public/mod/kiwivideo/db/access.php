@@ -2,7 +2,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
-    'mod/kiwilearner_interactivevideo:view' => [
+    'mod/kiwivideo:view' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => [
@@ -12,7 +12,7 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
-    'mod/kiwilearner_interactivevideo:addinstance' => [
+    'mod/kiwivideo:addinstance' => [
         'riskbitmask' => RISK_XSS,
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,

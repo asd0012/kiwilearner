@@ -3,7 +3,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
 
-class mod_kiwilearner_interactivevideo_mod_form extends moodleform_mod {
+class mod_kiwivideo_mod_form extends moodleform_mod {
 
     public function definition() {
         global $CFG;
@@ -18,9 +18,9 @@ class mod_kiwilearner_interactivevideo_mod_form extends moodleform_mod {
         $this->standard_intro_elements();
 
         // H5P content id.
-        $mform->addElement('text', 'h5pcontentid', get_string('h5pcontentid', 'kiwilearner_interactivevideo'));
+        $mform->addElement('text', 'h5pcontentid', get_string('h5pcontentid', 'kiwivideo'));
         $mform->setType('h5pcontentid', PARAM_INT);
-        $mform->addHelpButton('h5pcontentid', 'h5pcontentid', 'kiwilearner_interactivevideo');
+        $mform->addHelpButton('h5pcontentid', 'h5pcontentid', 'kiwivideo');
 
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();

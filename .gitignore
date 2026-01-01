@@ -26,8 +26,8 @@ moodle-docker/tests/apache2_ports.conf
 !moodle/public/local/
 !moodle/public/local/kiwilearner/
 !moodle/public/local/kiwilearner/**
-!moodle/public/mod/kiwilearner_interactivevideo/
-!moodle/public/mod/kiwilearner_interactivevideo/**
+!moodle/public/mod/kiwivideo/
+!moodle/public/mod/kiwivideo/**
 
 # third-party plugins you installed for testing (XP, etc.)
 moodle/public/blocks/**

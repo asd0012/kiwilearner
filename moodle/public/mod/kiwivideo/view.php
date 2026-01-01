@@ -1,17 +1,17 @@
 <?php
-// mod/kiwilearner_interactivevideo/view.php
+// mod/kiwivideo/view.php
 
 require(__DIR__ . '/../../config.php');
 
 $cmid = required_param('id', PARAM_INT);
 
-list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'kiwilearner_interactivevideo');
+list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'kiwivideo');
 require_login($course, true, $cm);
 
 $context = context_module::instance($cm->id);
-require_capability('mod/kiwilearner_interactivevideo:view', $context);
+require_capability('mod/kiwivideo:view', $context);
 
-$PAGE->set_url('/mod/kiwilearner_interactivevideo/view.php', ['id' => $cmid]);
+$PAGE->set_url('/mod/kiwivideo/view.php', ['id' => $cmid]);
 $PAGE->set_title(format_string($cm->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
@@ -20,7 +20,7 @@ $PAGE->set_context($context);
 // For MVP, we assume the module instance stores an H5P content id.
 // e.g. $instance->h5pcontentid
 $instance = $DB->get_record(
-    'kiwilearner_interactivevideo',
+    'kiwivideo',
     ['id' => $cm->instance],
     '*',
     MUST_EXIST
@@ -50,7 +50,7 @@ $PAGE->requires->js_init_code(
     'window.KL_IV_CMID = ' . (int)$cm->id . ';'
 );
 $PAGE->requires->js_init_code(
-    'window.KL_IV_AWARD_URL = "' . $CFG->wwwroot . '/mod/kiwilearner_interactivevideo/ajax_award.php";'
+    'window.KL_IV_AWARD_URL = "' . $CFG->wwwroot . '/mod/kiwivideo/ajax_award.php";'
 );
 
 // ----------------------------------------------------
