@@ -19,16 +19,20 @@ moodle-docker/local.env
 moodle-docker/exttests/
 moodle-docker/tests/apache2_ports.conf
 
+
+# third-party plugins you installed for testing (XP, etc.)
+moodle/public/blocks/**
+moodle/blocks/**
+
 # BUT keep our plugin tracked
 #!moodle/local/kiwilearner/
 #!moodle/local/kiwilearner/**
 !moodle/public/local/
 !moodle/public/local/kiwilearner/
 !moodle/public/local/kiwilearner/**
-
-# third-party plugins you installed for testing (XP, etc.)
-moodle/public/blocks/**
-moodle/blocks/**
+!moodle/public/blocks/
+!moodle/public/blocks/kiwilearner_dailyquiz/
+!moodle/public/blocks/kiwilearner_dailyquiz/**
 
 # editors / OS junk
 *.swp
