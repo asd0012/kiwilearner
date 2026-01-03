@@ -202,7 +202,7 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
         ];
     }
 
-    debugging('DailyQuiz: generated '.count($quizquestions).' questions', DEBUG_DEVELOPER);
+    #debugging('DailyQuiz: generated '.count($quizquestions).' questions', DEBUG_DEVELOPER);
     error_log('DailyQuiz course '.$courseid.' generated '.count($quizquestions).' questions: ' .
         json_encode(array_column($quizquestions, 'id')));
 
