@@ -6,19 +6,19 @@
     <input type="hidden" name="sesskey" value="{{sesskey}}">
     <input type="hidden" name="submitted" value="1">
 
-
-    <h3>{{quizname}}</h3>
-
     {{#questions}}
     <div class="question">
-        <p><strong>Q{{index}}:</strong> {{text}}</p>
+    <p><strong>Q:</strong> {{text}}</p>
+
         {{#options}}
         <div class="answer">
             <label>
-                <input type="radio" name="answers[{{qid}}]" value="{{id}}"> {{text}}
+              <input type="radio" id="{{qname}}_{{id}}" name="{{qname}}" value="{{id}}">
+              {{text}}
             </label>
         </div>
         {{/options}}
+    
     </div>
     {{/questions}}
 
