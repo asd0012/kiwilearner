@@ -99,7 +99,22 @@ class block_kiwilearner_dailyquiz extends block_base
 					$ans     = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
 					$correct = is_object($q) ? ($q->correct ?? '') : ($q['correct'] ?? '');
 
-					$iscorrect = (trim((string)$ans) !== '' && trim((string)$ans) === trim((string)$correct));
+					$ans     = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
+					$ans	 = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
+					$correctraw = is_object($q) ? ($q->correct ?? '') : ($q['correct'] ?? '');
+
+					$correctstr = strtolower(trim((string)$correctraw));
+
+					if (in_array($correctstr, ['yes', 'no', 'true', 'false', '1', '0'], true)) {
+						// correct is a flag (Yes/No)
+						$iscorrect = in_array($correctstr, ['yes', 'true', '1'], true);
+						$correctdisplay = $iscorrect ? 'Yes' : 'No';
+					} else {
+						// fallback: correct is an actual answer string
+						$iscorrect = (trim((string)$ans) !== '' && trim((string)$ans) === trim((string)$correctraw));
+						$correctdisplay = (string)$correctraw;
+					}
+
 					if ($iscorrect) {
 						$correctcount++;
 					}
@@ -117,7 +132,7 @@ class block_kiwilearner_dailyquiz extends block_base
 
 				$questioncount = count($items);
 				$scorepercent = $questioncount ? round(($correctcount / $questioncount) * 100, 1) : 0.0;
-				$xp_earned = $questioncount; // 1 question = 1 XP
+				$xp_earned = $correctcount; // 1 question = 1 XP
 
 				$summarydata = [
 					'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
