@@ -23,6 +23,8 @@
  */
 
 $string['pluginname'] = 'KiwiLearner Interactive Video';
+$string['pluginadministration'] = 'KiwiLearner Interactive Video administration';
+
 $string['modulename'] = 'KiwiLearner Interactive Video';
 $string['modulenameplural'] = 'KiwiLearner Interactive Videos';
 $string['h5pcontentid'] = 'H5P content id';
