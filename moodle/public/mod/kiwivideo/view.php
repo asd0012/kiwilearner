@@ -1,7 +1,7 @@
 <?php
-// mod/kiwivideo/view.php
-
 require(__DIR__ . '/../../config.php');
+
+use core_contentbank\contentbank;
 
 $cmid = required_param('id', PARAM_INT);
 
@@ -26,8 +26,10 @@ $instance = $DB->get_record(
     MUST_EXIST
 );
 
-echo $OUTPUT->header();
+$cb = new \core_contentbank\contentbank();
+$contentid = (int)($instance->h5pcontentid ?? 0);
 
+echo $OUTPUT->header();
 
 
 // ----------------------------------------------------
@@ -118,188 +120,210 @@ if ($debug && is_siteadmin()) {
     );
 }
 
-
-
-
 // ---------------------------
-// Render strategy
+// Render strategy (NO EXPORT FILES)
 // ---------------------------
 if (empty($contentid)) {
     echo $OUTPUT->notification('No H5P content configured for this activity.', 'error');
 } else {
+    try {
+        $content = $cb->get_content_from_id($contentid);
 
-    // Get all export files (itemid=0 per core_h5p_pluginfile()) and pick a .h5p.
-    $exportfiles = $DB->get_records('files', [
-        'contextid' => $sysctxid,
-        'component' => 'core_h5p',
-        'filearea'  => 'export',
-        'itemid'    => 0,
-    ], 'filepath ASC, filename ASC', 'id, filepath, filename, filesize, timecreated');
-
-    $candidates = [];
-    foreach ($exportfiles as $f) {
-        if ((int)$f->filesize <= 0) {
-            continue;
-        }
-        if (strtolower(substr($f->filename, -4)) !== '.h5p') {
-            continue;
-        }
-        $candidates[] = $f;
-    }
-
-    // Heuristic: prefer ones whose filepath contains "/<contentid>/".
-    $chosen = null;
-    foreach ($candidates as $f) {
-        if (strpos($f->filepath, '/' . $contentid . '/') !== false) {
-            $chosen = $f;
-            break;
-        }
-    }
-
-    // Fallback: newest .h5p by timecreated (or id).
-    if (!$chosen && $candidates) {
-        usort($candidates, function($a, $b) {
-            $ta = (int)($a->timecreated ?? 0);
-            $tb = (int)($b->timecreated ?? 0);
-            if ($ta === $tb) return (int)$b->id <=> (int)$a->id;
-            return $tb <=> $ta;
-        });
-        $chosen = $candidates[0];
-    }
-
-    if (!$chosen) {
-        echo $OUTPUT->notification(
-            'Cannot find any exported .h5p package in core_h5p/export (itemid=0). ' .
-            'This usually means exporting/downloading is disabled, or no package has been generated yet.',
-            'error'
-        );
-    } else {
-        // Build pluginfile URL to the exported .h5p package.
-        // NOTE: export filearea itemid MUST be 0 here.
-        $zipurl = \moodle_url::make_pluginfile_url(
-            $sysctxid,
-            'core_h5p',
-            'export',
-            0,
-            $chosen->filepath,
-            $chosen->filename
-        );
-
-        // Your embed.php expects ?url=... and internally uses core_h5p\player.
-        $embedurl = new \moodle_url('/h5p/embed.php', [
-            'url' => $zipurl->out(false),
-            'component' => 'mod_kiwivideo', // optional, helps with context in some cases
-        ]);
-
-        if ($debug && is_siteadmin()) {
-            echo $OUTPUT->heading('Render (debug)', 4);
-            echo html_writer::div('Chosen export file: ' . s($chosen->filepath . $chosen->filename) . ' size=' . (int)$chosen->filesize);
-            echo html_writer::div('ZIP URL: ' . s($zipurl->out(false)));
-            echo html_writer::div(html_writer::link($embedurl, 'Open embed URL (debug)'));
-        }
-
-        // A clean responsive video wrapper (16:9).
-        echo html_writer::start_tag('div', [
+        // Render content-bank item directly (no /h5p/embed.php and no export zips).
+        $contenttype = $content->get_content_type_instance();
+        echo html_writer::start_div('kiwivideo-contentbank-wrap', [
+            'id' => 'kiwivideo-wrap',
             'style' => 'max-width:1200px; margin:0 auto;'
         ]);
+        echo $contenttype->get_view_content($content);
+        echo html_writer::end_div();
 
-        echo html_writer::start_tag('div', [
-            'style' => 'position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:12px; overflow:hidden;'
-        ]);
-
-        echo html_writer::tag('iframe', '', [
-            'class' => 'kiwivideo-h5p-iframe',
-            'src' => $embedurl->out(false),
-            'style' => 'position:absolute; inset:0; width:100%; height:100%; border:0; display:block; overflow:hidden;',
-            'scrolling' => 'no',
-            'allowfullscreen' => 'allowfullscreen',
-            'allow' => 'autoplay; fullscreen; encrypted-media',
-            'title' => format_string($instance->name),
-        ]);
-
-        echo html_writer::end_tag('div');
-        echo html_writer::end_tag('div');
-
-
-
+    } catch (\Throwable $e) {
+        if (is_siteadmin()) {
+            echo $OUTPUT->notification('Failed to render content bank H5P: ' . s($e->getMessage()), 'error');
+        } else {
+            echo $OUTPUT->notification('Failed to render H5P content.', 'error');
+        }
     }
 }
 
 
+// ----------------------------------------------------
+// Ajax event debug panel
+// ----------------------------------------------------
+$xpdebug = optional_param('xpdebug', 0, PARAM_BOOL);
 
+if ($xpdebug && is_siteadmin()) {
+    echo html_writer::tag('div', '', [
+        'id' => 'kl-xp-debug',
+        'style' => 'margin:12px auto; max-width:1200px; padding:10px; border:1px solid #ddd; border-radius:10px; background:#fff; font-family:monospace; font-size:12px; line-height:1.4;'
+    ]);
 
+    echo html_writer::tag('div',
+        'KiwiLearner XP Debug enabled. This panel logs xAPI postMessage events + AJAX responses.',
+        ['style' => 'margin-bottom:6px; font-weight:600;']
+    );
+
+    echo html_writer::tag('div', 'Tip: interact with a question and watch logs below.', ['style' => 'color:#666;']);
+
+    echo html_writer::tag('div', '', ['id' => 'kl-xp-debug-log', 'style' => 'margin-top:8px; white-space:pre-wrap;']);
+}
 
 // ----------------------------------------------------
 // Inject JS context for XP awarding
 // ----------------------------------------------------
 $PAGE->requires->js_init_code(
-    'window.KL_IV_CMID = ' . (int)$cm->id . ';'
-);
-$PAGE->requires->js_init_code(
-    'window.KL_IV_AWARD_URL = "' . $CFG->wwwroot . '/mod/kiwivideo/ajax_award.php";'
+    'window.KL_IV = ' . json_encode([
+        'cmid' => (int)$cm->id,
+        'awardUrl' => $CFG->wwwroot . '/mod/kiwivideo/ajax_award.php',
+        'sesskey' => sesskey(),
+    ]) . ';'
 );
 
 // ----------------------------------------------------
 // MVP inline JS: listen for H5P answered(success) events
 // ----------------------------------------------------
-$PAGE->requires->js_init_code(<<<'JS'
+
+$xpdebug = optional_param('xpdebug', 0, PARAM_BOOL);
+
+$PAGE->requires->js_init_code(<<<JS
 (function () {
-  const hook = () => {
-    if (!window.H5P || !H5P.externalDispatcher) {
-      setTimeout(hook, 500);
+  if (!window.KL_IV) return;
+
+  const XPDEBUG = Boolean({$xpdebug}) && typeof console !== 'undefined';
+
+  function log(...args) {
+    if (!XPDEBUG) return;
+    console.log('[KL-XP]', ...args);
+    const box = document.getElementById('kl-xp-debug-log');
+    if (box) box.textContent += args.map(a => {
+      try { return (typeof a === 'string') ? a : JSON.stringify(a, null, 2); }
+      catch (e) { return String(a); }
+    }).join(' ') + "\\n\\n";
+  }
+
+  const sent = new Set();
+
+  function getSubContentId(statement) {
+    return statement?.object?.definition?.extensions?.['http://h5p.org/x-api/h5p-subContentId'];
+  }
+
+  function isAnswered(statement) {
+    const verb = statement?.verb?.id || '';
+    return verb.includes('/answered');
+  }
+
+  async function awardXP(subcontentid, success) {
+    // Dedup in-session
+    const key = subcontentid + ':' + (success ? '1' : '0');
+    if (sent.has(key)) {
+      log('SKIP duplicate', key);
       return;
     }
+    sent.add(key);
 
-    console.log('[KiwiLearner] H5P XP listener active');
+    const params = new URLSearchParams();
+    params.set('cmid', KL_IV.cmid);
+    params.set('subcontentid', subcontentid);
+    params.set('success', success ? '1' : '0');
+    params.set('sesskey', KL_IV.sesskey);
 
-    const sent = new Set();
+    log('POST award', KL_IV.awardUrl, Object.fromEntries(params.entries()));
 
-    H5P.externalDispatcher.on('xAPI', function (evt) {
-      const st = evt?.data?.statement;
-      if (!st) return;
-
-      const verb = st?.verb?.id || '';
-      if (!verb.includes('/answered')) return;
-
-      const result = st?.result || {};
-      if (result.success !== true) return;
-
-      const def = st?.object?.definition || {};
-      const ex = def.extensions || {};
-      const subcontentid = ex['http://h5p.org/x-api/h5p-subContentId'];
-
-      if (!subcontentid) return;
-
-      // Ignore container-level answered events
-      const isRealQuestion =
-        !!def.interactionType ||
-        Array.isArray(def.choices) ||
-        Array.isArray(def.correctResponsesPattern) ||
-        (def.type && String(def.type).includes('cmi.interaction'));
-
-      if (!isRealQuestion) return;
-
-      // Prevent repeat posts in same session
-      if (sent.has(subcontentid)) return;
-      sent.add(subcontentid);
-
-      const params = new URLSearchParams();
-      params.set('cmid', window.KL_IV_CMID);
-      params.set('subcontentid', subcontentid);
-      params.set('success', '1');
-      params.set('sesskey', M.cfg.sesskey);
-
-      fetch(window.KL_IV_AWARD_URL, {
+    try {
+      const resp = await fetch(KL_IV.awardUrl, {
         method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: params.toString()
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+        credentials: 'same-origin'
       });
-    });
-  };
+      const text = await resp.text();
+      log('AJAX status', resp.status, 'body', text);
+    } catch (e) {
+      log('AJAX error', String(e));
+    }
+  }
 
-  hook();
+  // ---- hook into the iframe's H5P externalDispatcher ----
+  function findH5PDispatcher() {
+    // Case A: inline render on the same page
+    if (window.H5P && window.H5P.externalDispatcher) {
+        return { dispatcher: window.H5P.externalDispatcher, where: 'parent' };
+    }
+
+    // Case B: rendered in an iframe somewhere inside our wrapper
+    const wrap = document.getElementById('kiwivideo-wrap');
+    const iframe = wrap ? wrap.querySelector('iframe') : null;
+    if (!iframe) return null;
+
+    try {
+        const w = iframe.contentWindow;
+        if (w && w.H5P && w.H5P.externalDispatcher) {
+        return { dispatcher: w.H5P.externalDispatcher, where: 'iframe' };
+        }
+    } catch (e) {
+        // Cross-origin iframe (unlikely in Moodle), can't access.
+        return null;
+    }
+
+    return null;
+    }
+
+
+  // Poll until iframe+H5P exist (simple + robust)
+    let tries = 0;
+    const timer = setInterval(() => {
+    tries++;
+
+    const found = findH5PDispatcher();
+    if (found) {
+        clearInterval(timer);
+        log('Attached to H5P externalDispatcher in', found.where);
+
+        found.dispatcher.on('xAPI', (event) => {
+        const statement = event?.data?.statement;
+        if (!statement) return;
+
+        log('xAPI', statement);
+
+        const verb = statement?.verb?.id || '';
+        if (!verb.includes('/answered')) return;
+
+        const subcontentid = statement?.object?.definition?.extensions?.['http://h5p.org/x-api/h5p-subContentId'];
+        const success = Boolean(statement?.result?.success);
+
+        if (success && subcontentid) {
+            
+            const def = statement?.object?.definition || {};
+            const isQuestion =
+            def.interactionType === 'choice' ||
+            Array.isArray(def.choices) ||
+            Array.isArray(def.correctResponsesPattern) ||
+            (def.type && String(def.type).includes('cmi.interaction'));
+
+            if (!isQuestion) {
+            log('Skip non-question answered statement');
+            return;
+            }
+
+            awardXP(subcontentid, true);
+        }
+        });
+
+        return;
+    }
+
+    if (tries > 100) { // ~20s
+        clearInterval(timer);
+        log('Gave up: could not find H5P dispatcher (no iframe and no inline H5P)');
+    }
+    }, 200);
+
+
+  log('KiwiLearner XP listener active. cmid=', KL_IV.cmid);
 })();
 JS
 );
+
 
 echo $OUTPUT->footer();
