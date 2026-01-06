@@ -90,81 +90,97 @@ class block_kiwilearner_dailyquiz extends block_base
 				$results = block_kiwilearner_dailyquiz_get_results($USER->id);
 
 				// Build inline summary data from $results.
-				$items = [];
-				$correctcount = 0;
-				$questions = $results->questions ?? ($results['questions'] ?? []);
-
-				foreach ($questions as $q) {
-					$qtext   = is_object($q) ? ($q->text ?? '')   : ($q['text'] ?? '');
-					$ans     = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
-					$correct = is_object($q) ? ($q->correct ?? '') : ($q['correct'] ?? '');
-
-					$ans     = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
-					$ans	 = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
-					$correctraw = is_object($q) ? ($q->correct ?? '') : ($q['correct'] ?? '');
-
-					$correctstr = strtolower(trim((string)$correctraw));
-
-					if (in_array($correctstr, ['yes', 'no', 'true', 'false', '1', '0'], true)) {
-						// correct is a flag (Yes/No)
-						$iscorrect = in_array($correctstr, ['yes', 'true', '1'], true);
-						$correctdisplay = $iscorrect ? 'Yes' : 'No';
-					} else {
-						// fallback: correct is an actual answer string
-						$iscorrect = (trim((string)$ans) !== '' && trim((string)$ans) === trim((string)$correctraw));
-						$correctdisplay = (string)$correctraw;
-					}
-
-					if ($iscorrect) {
-						$correctcount++;
-					}
-
-					$items[] = [
-						'label' => $qtext,
-						'youranswer' => $ans,
-						'correctanswer' => $correct,
-						'iscorrect' => $iscorrect,
-						'isincorrect' => !$iscorrect,
-						// for now: link back to course page (you already have $courseurl / $posturl)
-						'remediationurl' => !$iscorrect ? $posturl : '',
-					];
+				// all questions for TODAY (your get_results currently returns whole day)
+				$allquestions = $results->questions ?? ($results['questions'] ?? []);
+				if (!is_array($allquestions)) {
+					$allquestions = [];
 				}
 
-				$questioncount = count($items);
-				$scorepercent = $questioncount ? round(($correctcount / $questioncount) * 100, 1) : 0.0;
-				$xp_earned = $correctcount; // 1 question = 1 XP
+				// "this submit" question count: use the generated qids (not answers count)
+				$attemptcount = is_array($qids) ? count($qids) : 0;
+				$attemptcount = max(1, $attemptcount);
 
+				// take only the latest N questions as "this submit"
+				$attemptquestions = array_slice($allquestions, -$attemptcount);
+
+				// helper to build items + correctcount (same logic you already wrote)
+				$build_items = function (array $questions) use ($posturl): array {
+					$items = [];
+					$correctcount = 0;
+
+					foreach ($questions as $q) {
+						$qtext = is_object($q) ? ($q->text ?? '') : ($q['text'] ?? '');
+						$ansraw = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
+						$correctraw = is_object($q) ? ($q->correct ?? '') : ($q['correct'] ?? '');
+
+						$correctstr = strtolower(trim((string)$correctraw));
+
+						if (in_array($correctstr, ['yes', 'no', 'true', 'false', '1', '0'], true)) {
+							$iscorrect = in_array($correctstr, ['yes', 'true', '1'], true);
+							$correctdisplay = $iscorrect ? 'Yes' : 'No';
+						} else {
+							$iscorrect = (trim((string)$ansraw) !== '' && trim((string)$ansraw) === trim((string)$correctraw));
+							$correctdisplay = (string)$correctraw;
+						}
+
+						if ($iscorrect) {
+							$correctcount++;
+						}
+
+						$items[] = [
+							'label'          => $qtext,
+							'youranswer'     => $ansraw,
+							'correctanswer'  => $correctdisplay, // 用 display，別再塞 raw
+							'iscorrect'      => $iscorrect,
+							'isincorrect'    => !$iscorrect,
+							'remediationurl' => !$iscorrect ? $posturl : '',
+						];
+					}
+
+					return [$items, $correctcount];
+				};
+
+				// build FULL-DAY summary (for saving + summary page)
+				[$alldayitems, $todaycorrect] = $build_items($allquestions);
+				$todaycount = count($alldayitems);
+
+				// build INLINE summary (for course page right after submit)
+				[$inlineitems, $attemptcorrect] = $build_items($attemptquestions);
+
+				// store FULL DAY in preferences (so summary page can show everything)
 				$summarydata = [
-					'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
-					'questioncount' => $questioncount,
-					'xp_earned'     => $xp_earned,
-					'correctcount'  => $correctcount,
-					'scorepercent'  => $scorepercent,
-					'daykey'        => $daykey,
-					'items'         => $items,
-					'hasitems'      => ($questioncount > 0),
+					'quizname'       => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
+					'questioncount'  => $todaycount,
+					'xp_earned'      => $todaycorrect,
+					'daykey'         => $daykey,
+					'items'          => $alldayitems,
+					'hasitems'       => ($todaycount > 0),
 				];
 
-				if ($questioncount > 0) {
+				// render only THIS SUBMIT items, but keep XP as TODAY
+				$inlinesummary = $summarydata;
+				$inlinesummary['items'] = $inlineitems;
+				$inlinesummary['hasitems'] = (count($inlineitems) > 0);
+
+				// urls
+				$summaryurl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
+				$continueurl = (new moodle_url('/course/view.php', ['id' => $courseid, 'newquiz' => 1]))->out(false);
+
+				if ($todaycount > 0) {
 					set_user_preference($prefkey, json_encode($summarydata));
 					$savedsummary = $summarydata;
-				} else {
-					// Don’t overwrite a real saved summary with “0/0”.
-					// Optional: show a warning so you notice it during testing.
-					$this->content->text .= $OUTPUT->notification(
-						'No questions were returned in results, so summary was not saved.',
-						'warning'
-					);
 				}
 
 				$dataresult = (object)[
-					'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
-					'results'  => $results,
-					'posturl'  => $posturl,
-					'courseid' => $COURSE->id,
-					'sesskey'  => sesskey(),
-					'questions' => [],
-					'summary'  => $summarydata,   // ✅ attach to mustache
+					'quizname'    => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
+					'results'     => $results,
+					'posturl'     => $posturl,
+					'courseid'    => $COURSE->id,
+					'sesskey'     => sesskey(),
+					'questions'   => [],
+					'summary'     => $inlinesummary,  // ✅ 只顯示本次 items
+					'summaryurl'  => $summaryurl,
+					'continueurl' => $continueurl,
 				];
 
 				$this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $dataresult);
@@ -254,26 +270,26 @@ class block_kiwilearner_dailyquiz extends block_base
 		}
 
 		if (!empty($savedsummary)) {
-			$data = (object)[
-				'quizname' => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
-				'posturl'  => $posturl,
-				'courseid' => $courseid,
-				'sesskey'  => sesskey(),
-				'questions' => [],
-				'summary'  => $savedsummary,
-			];
+			$summaryurl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
 
-			$this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $data);
-
-
-			$this->content->text .= html_writer::link(
-				new moodle_url('/course/view.php', ['id' => $courseid, 'newquiz' => 1]),
-				'Generate quiz',
-				['class' => 'btn btn-primary mt-2']
+			$this->content->text .= html_writer::div(
+				'XP earned today: <strong>' . (int)($savedsummary['xp_earned'] ?? 0) .
+					' / ' . (int)($savedsummary['questioncount'] ?? 0) . '</strong> ' .
+					html_writer::link($summaryurl, 'View today\'s summary', ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
+				'alert alert-info mt-2'
 			);
-
-			return $this->content;
 		}
+		// 然後照常顯示 generator form
+		$this->content->text .= $mform->render();
+
+		$this->content->text .= html_writer::link(
+			new moodle_url('/course/view.php', ['id' => $courseid, 'newquiz' => 1]),
+			'Generate quiz',
+			['class' => 'btn btn-primary mt-2']
+		);
+
+		return $this->content;
+
 
 		// Default: show generator form.
 		$this->content->text .= $mform->render();

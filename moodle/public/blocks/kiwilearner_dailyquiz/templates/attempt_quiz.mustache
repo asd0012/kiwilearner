@@ -35,6 +35,16 @@
     	XP earned today: <strong>{{xp_earned}} / {{questioncount}}</strong>
 	{{#isunknown}}<span class="badge bg-secondary text-white ms-2">Pending</span>{{/isunknown}}
     </p>
+    
+<div class="mt-2 d-flex gap-2">
+  {{#continueurl}}
+    <a class="btn btn-primary btn-sm" href="{{continueurl}}">Next quiz</a>
+  {{/continueurl}}
+
+  {{#summaryurl}}
+    <a class="btn btn-outline-secondary btn-sm" href="{{summaryurl}}">View today’s summary</a>
+  {{/summaryurl}}
+</div>
 
     {{#hasitems}}
     <ul class="list-group">
