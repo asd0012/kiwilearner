@@ -1,11 +1,11 @@
 <?php
-namespace local_kiwilearner\utils;
+namespace local_kiwilearner\events;
 
 defined('MOODLE_INTERNAL') || die();
 
 use context_course;
 
-class xp_engine {
+class xp_award {
 
     /**
      * Award participation XP for each question in a submitted attempt.
