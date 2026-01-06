@@ -13,19 +13,64 @@ $PAGE->set_title('Daily Quiz Summary');
 $PAGE->set_heading('Daily Quiz Summary');
 
 $daykey  = userdate(time(), '%Y%m%d');
-$prefkey = 'block_kiwilearner_dailyquiz_summary_' . $courseid;
+require_once(__DIR__ . '/lib.php');
 
-$savedsummary = json_decode(get_user_preferences($prefkey, ''), true);
-if (!is_array($savedsummary) || (($savedsummary['daykey'] ?? '') !== $daykey)) {
-    $savedsummary = [
-        'quizname'      => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
-        'questioncount' => 0,
-        'xp_earned'     => 0,
-        'daykey'        => $daykey,
-        'items'         => [],
-        'hasitems'      => false,
+global $DB, $USER;
+
+$daykey = optional_param('day', userdate(time(), '%Y%m%d'), PARAM_ALPHANUM);
+
+$rows = block_kiwilearner_dailyquiz_get_results($USER->id, $courseid, $daykey);
+
+$items = [];
+$xp = 0;
+
+foreach ($rows as $qid => $r) {
+    $qid = (int)$qid;
+
+    $q = $DB->get_record('question', ['id' => $qid], 'id,name', IGNORE_MISSING);
+    $label = $q ? $q->name : "Q{$qid}";
+
+    $your = (string)$r->answer;
+    if (!empty($r->answer)) {
+        $ans = $DB->get_record('question_answers', ['id' => (int)$r->answer], 'id,answer', IGNORE_MISSING);
+        if ($ans) {
+            $your = trim(strip_tags($ans->answer));
+        }
+    }
+
+    $correctrec = $DB->get_record_sql(
+        'SELECT id, answer
+           FROM {question_answers}
+          WHERE question = :qid AND fraction > 0
+       ORDER BY fraction DESC, id ASC',
+        ['qid' => $qid],
+        IGNORE_MISSING
+    );
+
+    $correct = $correctrec ? trim(strip_tags($correctrec->answer)) : '';
+    $correctid = $correctrec ? (int)$correctrec->id : 0;
+
+    $iscorrect = ((int)$r->answer === $correctid) || ((float)$r->score > 0);
+
+    $items[] = [
+        'label'         => s($label),
+        'iscorrect'     => $iscorrect,
+        'isincorrect'   => !$iscorrect,
+        'youranswer'    => $your,
+        'correctanswer' => $correct,
     ];
+
+    $xp += $iscorrect ? 1 : 0;
 }
+
+$savedsummary = [
+    'daykey'        => $daykey,
+    'xp_earned'     => $xp,
+    'questioncount' => count($items),
+    'hasitems'      => !empty($items),
+    'items'         => $items,
+    'isunknown'     => false,
+];
 
 $data = (object)[
     'quizname'    => get_string('pluginname', 'block_kiwilearner_dailyquiz'),

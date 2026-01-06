@@ -86,8 +86,10 @@ class block_kiwilearner_dailyquiz extends block_base
 				// Optional: prevent re-submitting the same quiz via refresh/back
 				unset($SESSION->$storekey);
 
-				block_kiwilearner_dailyquiz_submit_attempt($USER->id, $answers);
-				$results = block_kiwilearner_dailyquiz_get_results($USER->id);
+				block_kiwilearner_dailyquiz_submit_attempt($USER->id,  $courseid, $answers);
+				$daykey = userdate(time(), '%Y%m%d');
+				$results = block_kiwilearner_dailyquiz_get_results($USER->id, $courseid, $daykey);
+
 
 				// Build inline summary data from $results.
 				// all questions for TODAY (your get_results currently returns whole day)
