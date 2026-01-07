@@ -44,7 +44,22 @@
   {{#summaryurl}}
     <a class="btn btn-outline-secondary btn-sm" href="{{summaryurl}}">View today’s summary</a>
   {{/summaryurl}}
+
 </div>
+
+<form method="post" action="{{{posturl}}}" class="mt-2">
+  <input type="hidden" name="id" value="{{courseid}}">
+  <input type="hidden" name="sesskey" value="{{sesskey}}">
+  <input type="hidden" name="emailsummary" value="1">
+
+  <div class="kiwi-emailwrap">
+    <button type="submit"
+            class="btn btn-outline-primary btn-sm w-100"
+            style="max-width: 420px;">
+      Email me this summary
+    </button>
+  </div>
+</form>
 
     {{#hasitems}}
     <ul class="list-group">
