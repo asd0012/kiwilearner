@@ -84,8 +84,49 @@ class block_kiwilearner_dailyquiz extends block_base
 					}
 				}
 
+				global $DB;
+
+				// ✅ Compute incorrect qids for THIS attempt using answer IDs.
+				$incorrectqids = [];
+
+				foreach ($qids as $qid) {
+					$qid = (int)$qid;
+					$yourid = (int)($answers[$qid] ?? 0);
+
+					// If they didn't pick an answer, treat as incorrect.
+					if ($yourid <= 0) {
+						$incorrectqids[] = $qid;
+						continue;
+					}
+
+					// Support multiple correct answers (fraction=1).
+					$correctids = $DB->get_fieldset_select(
+						'question_answers',
+						'id',
+						'question = :qid AND fraction >= :f',
+						['qid' => $qid, 'f' => 0.999]
+					);
+
+					$correctids = array_map('intval', $correctids ?: []);
+					if (empty($correctids) || !in_array($yourid, $correctids, true)) {
+						$incorrectqids[] = $qid;
+					}
+				}
+
+				$incorrectqids = array_values(array_unique($incorrectqids));
+				$attemptincorrectqids = $incorrectqids; 
+
+				// ✅ Store for reattempt (store a separate key, NOT $storekey)
+				$lastkey = 'block_kiwilearner_dailyquiz_last_' . (int)$courseid;
+				$SESSION->$lastkey = [
+					'daykey' => $daykey,                 // you already have $daykey earlier
+					'incorrectqids' => $incorrectqids,
+					'time' => time(),
+				];
+
 				// Optional: prevent re-submitting the same quiz via refresh/back
-				unset($SESSION->$storekey);
+				// unset($SESSION->$storekey);
+				$attemptqids = $qids; 
 
 				block_kiwilearner_dailyquiz_submit_attempt($USER->id,  $courseid, $answers);
 				$daykey = userdate(time(), '%Y%m%d');
@@ -113,6 +154,10 @@ class block_kiwilearner_dailyquiz extends block_base
 					$correctcount = 0;
 
 					foreach ($questions as $q) {
+						$qid = is_object($q)
+							? (int)($q->qid ?? $q->questionid ?? $q->question ?? $q->id ?? 0)
+							: (int)($q['qid'] ?? $q['questionid'] ?? $q['question'] ?? $q['id'] ?? 0);
+
 						$qtext = is_object($q) ? ($q->text ?? '') : ($q['text'] ?? '');
 						$ansraw = is_object($q) ? ($q->answer ?? '') : ($q['answer'] ?? '');
 						$correctraw = is_object($q) ? ($q->correct ?? '') : ($q['correct'] ?? '');
@@ -132,6 +177,7 @@ class block_kiwilearner_dailyquiz extends block_base
 						}
 
 						$items[] = [
+							'qid' => $qid,                       // ✅ this is the one you need
 							'label'          => $qtext,
 							'youranswer'     => $ansraw,
 							'correctanswer'  => $correctdisplay,
@@ -150,7 +196,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				$todaycount = count($alldayitems);
 
 				// build INLINE summary (for course page right after submit)
-				[$inlineitems, $attemptcorrect] = $build_items($attemptquestions);
+				// [$inlineitems, $attemptcorrect] = $build_items($attemptquestions);
 
 				// store FULL DAY in preferences (so summary page can show everything)
 				$summarydata = [
@@ -163,13 +209,51 @@ class block_kiwilearner_dailyquiz extends block_base
 				];
 
 				// render only THIS SUBMIT items, but keep XP as TODAY
-				$inlinesummary = $summarydata;
-				$inlinesummary['items'] = $inlineitems;
-				$inlinesummary['hasitems'] = (count($inlineitems) > 0);
+				#$inlinesummary = $summarydata;
+				#$inlinesummary['items'] = $inlineitems;
+				#$inlinesummary['hasitems'] = (count($inlineitems) > 0);
 
-				// urls
-				$summaryurl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
+				[$inlineitems, $attemptcorrect] = $build_items($attemptquestions);
+
+				// incorrect qids for THIS attempt (matches what UI says)
+				$canreattempt = !empty($attemptincorrectqids);
+
+
+				$canreattempt = !empty($incorrectqids);
+
+				// urls FIRST (so they exist)
+				$summaryurl  = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
 				$continueurl = (new moodle_url('/course/view.php', ['id' => $courseid, 'newquiz' => 1]))->out(false);
+
+				$reattempturl = (new moodle_url('/course/view.php', [
+					'id' => $courseid,
+					'reattempt' => 1,
+					'sesskey' => sesskey(),
+				]))->out(false);
+
+
+				// after computing $incorrectqids:
+				$canreattempt = !empty($incorrectqids);   // IMPORTANT: must be !empty, not empty
+
+				$quizname = get_string('pluginname', 'block_kiwilearner_dailyquiz');
+
+				$inlinesummary = [
+					'quizname'      => $quizname,
+					'xp_earned'     => $todayxp,
+					'questioncount' => $todaytotal,
+
+					'continueurl'   => $continueurl,
+					'summaryurl'    => $summaryurl,
+
+					'items'         => $inlineitems,
+					'hasitems'      => !empty($inlineitems),
+
+					'canreattempt'  => $canreattempt,
+					'reattempturl'  => $reattempturl,
+
+					'incorrectcount' => count($attemptincorrectqids),
+				];
+
 
 				#if ($todaycount > 0) {
 				if ($todaytotal > 0) {
@@ -185,7 +269,23 @@ class block_kiwilearner_dailyquiz extends block_base
 
 				// Build attempt items (however you build it)
 				$attemptitems = block_kiwilearner_dailyquiz_build_attempt_items($USER->id, $courseid, $daykey, $attemptqids);
+				$attemptqids = array_values(array_map('intval', (array)$attemptqids));
 
+				if (!empty($attemptitems['items']) && is_array($attemptitems['items'])) {
+					foreach ($attemptitems['items'] as $i => &$it) {
+						$qid = (int)($it['qid'] ?? $it['questionid'] ?? $it['id'] ?? ($attemptqids[$i] ?? 0));
+						$it['qid'] = $qid;
+
+						$iscorrect = !empty($it['iscorrect']);
+						$it['remediationurl'] = (!$iscorrect && $qid > 0)
+							? (new moodle_url('/local/kiwilearner/review.php', [
+								'courseid' => $courseid,
+								'qid' => $qid,
+							]))->out(false)
+							: '';
+					}
+					unset($it);
+				}
 				$dataresult = (object)[
 					'quizname'    => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
 					'results'     => $results,
@@ -197,6 +297,10 @@ class block_kiwilearner_dailyquiz extends block_base
 					'summaryurl'  => $summaryurl,
 					'continueurl' => $continueurl,
 					'attempt' => $attemptitems,
+
+					// ✅ ADD THESE
+					'canreattempt' => $canreattempt,
+					'reattempturl' => $reattempturl,
 				];
 
 				$this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $dataresult);
@@ -208,6 +312,96 @@ class block_kiwilearner_dailyquiz extends block_base
 		// (B) Generator moodleform (explicit action URL).
 		// ------------
 		$mform = new \block_kiwilearner_dailyquiz\form\generate_form($courseurl);
+
+
+		$reattempt = optional_param('reattempt', 0, PARAM_BOOL);
+
+		if ($reattempt) {
+			// Optional: if you put sesskey in URL, you can validate it
+			// require_sesskey();
+
+			$lastkey  = 'block_kiwilearner_dailyquiz_last_' . (int)$courseid;
+			$storekey = 'block_kiwilearner_dailyquiz_' . (int)$courseid;
+
+			$last = $SESSION->$lastkey ?? null;
+
+			if (!is_array($last) || (($last['daykey'] ?? '') !== $daykey)) {
+				$this->content->text .= $OUTPUT->notification(
+					'Reattempt session expired. Please generate a new quiz.',
+					'warning'
+				);
+				// fall through to generator below
+			} else {
+				$incorrectqids = $last['incorrectqids'] ?? [];
+				$incorrectqids = array_values(array_filter(array_map('intval', (array)$incorrectqids), fn($id) => $id > 0));
+
+				if (empty($incorrectqids)) {
+					$this->content->text .= $OUTPUT->notification(
+						'No incorrect questions to reattempt.',
+						'info'
+					);
+					// fall through to generator below
+				} else {
+					// ✅ Load those questions
+					$questions = block_kiwilearner_dailyquiz_get_questions_by_ids($courseid, $incorrectqids);
+
+					if (empty($questions)) {
+						$this->content->text .= $OUTPUT->notification(
+							'Could not load the incorrect questions. Please generate a new quiz.',
+							'warning'
+						);
+						// fall through
+					} else {
+						// ✅ Add qname to match your mustache radio group names
+						foreach ($questions as &$q) {
+							$qid = is_array($q) ? (int)($q['id'] ?? 0) : (int)($q->id ?? 0);
+							$qname = 'q' . $qid;
+
+							if (is_array($q)) {
+								$q['qname'] = $qname;
+								if (!empty($q['options']) && is_array($q['options'])) {
+									foreach ($q['options'] as &$opt) {
+										if (is_array($opt)) $opt['qname'] = $qname;
+										else $opt->qname = $qname;
+									}
+									unset($opt);
+								}
+							} else {
+								$q->qname = $qname;
+								if (!empty($q->options) && is_array($q->options)) {
+									foreach ($q->options as &$opt) {
+										if (is_array($opt)) $opt['qname'] = $qname;
+										else $opt->qname = $qname;
+									}
+									unset($opt);
+								}
+							}
+						}
+						unset($q);
+
+						// ✅ Store these qids so submit handler knows what was asked
+						$SESSION->$storekey = [
+							'qids' => $incorrectqids,
+							'time' => time(),
+							'mode' => 'reattempt',
+						];
+
+						$quizdata = (object)[
+							'quizname'  => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
+							'questions' => $questions,
+							'posturl'   => $posturl,
+							'courseid'  => $courseid,
+							'sesskey'   => sesskey(),
+							'summary'   => null, // IMPORTANT: show quiz form
+						];
+
+						$this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $quizdata);
+						return $this->content;
+					}
+				}
+			}
+		}
+
 
 		if ($mform->is_cancelled()) {
 			$this->content->text .= $OUTPUT->notification('Quiz cancelled.', 'info');

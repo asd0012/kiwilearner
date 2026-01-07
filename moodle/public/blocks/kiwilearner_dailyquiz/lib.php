@@ -450,3 +450,50 @@ function block_kiwilearner_dailyquiz_build_attempt_items(int $userid, int $cours
         'hasitems' => !empty($items),
     ];
 }
+
+function block_kiwilearner_dailyquiz_get_questions_by_ids(int $courseid, array $qids): array
+{
+    global $DB;
+
+    $qids = array_values(array_unique(array_filter(array_map('intval', $qids), fn($id) => $id > 0)));
+    if (empty($qids)) {
+        return [];
+    }
+
+    list($insql, $params) = $DB->get_in_or_equal($qids, SQL_PARAMS_NAMED);
+
+    // Only multichoice questions
+    $questions = $DB->get_records_select('question', "id $insql AND qtype = :qtype", $params + ['qtype' => 'multichoice']);
+    if (empty($questions)) {
+        return [];
+    }
+
+    $out = [];
+
+    foreach ($qids as $qid) {
+        if (empty($questions[$qid])) {
+            continue;
+        }
+
+        $q = $questions[$qid];
+
+        // Answers
+        $answers = $DB->get_records('question_answers', ['question' => $qid], 'id ASC', 'id, answer');
+
+        $opts = [];
+        foreach ($answers as $a) {
+            $opts[] = [
+                'id'   => (int)$a->id,
+                'text' => trim(strip_tags($a->answer)), // keep it simple for now
+            ];
+        }
+
+        $out[] = [
+            'id'      => (int)$q->id,
+            'text'    => trim(strip_tags($q->questiontext)),
+            'options' => $opts,
+        ];
+    }
+
+    return $out;
+}

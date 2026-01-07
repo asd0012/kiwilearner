@@ -57,9 +57,10 @@
         </div>
 
         <div class="small mt-1">
-          Your: <code>{{youranswer}}</code> | Correct: <code>{{correctanswer}}</code>
+          Your: <code>{{youranswer}}</code>
+          {{#iscorrect}} | Correct: <code>{{correctanswer}}</code>{{/iscorrect}}
           {{#isincorrect}}
-            {{#remediationurl}} | <a href="{{remediationurl}}">Review</a>{{/remediationurl}}
+            {{#remediationurl}} | <a href="{{{remediationurl}}}">Review</a>{{/remediationurl}}
           {{/isincorrect}}
         </div>
       </li>
@@ -68,6 +69,7 @@
     {{/hasitems}}
   </div>
 </div>
+
 {{/summary}}
 
 {{#results}}
@@ -87,21 +89,32 @@
               {{status}}
             </span>
           </div>
-          <div style="margin-top:4px;">
-            Your: {{{your}}} | Correct: {{{correct}}}
-          </div>
+      <div style="margin-top:4px;">
+        Your: {{{your}}}
+        {{#iscorrect}} | Correct: {{{correct}}}{{/iscorrect}}
+        {{^iscorrect}}
+          {{#remediationurl}} | <a href="{{{remediationurl}}}">Review</a>{{/remediationurl}}
+        {{/iscorrect}}
+      </div>
         </div>
       {{/items}}
     </div>
   {{/hasitems}}
 {{/attempt}}
 
-<ul>
-    {{#questions}}
-    <li>{{text}} — Your answer: {{answer}} — Correct: {{correct}}</li>
-    {{/questions}}
-</ul>
+<div class="mt-3">
+  {{#canreattempt}}
+    <a class="btn btn-outline-primary btn-sm w-100" href="{{reattempturl}}">
+      Reattempt incorrect questions
+    </a>
+  {{/canreattempt}}
+
+  {{^canreattempt}}
+    <button class="btn btn-outline-primary btn-sm w-100" disabled>
+      All correct — nothing to reattempt
+    </button>
+  {{/canreattempt}}
+</div>
 {{/results}}
 
 </div>
-
