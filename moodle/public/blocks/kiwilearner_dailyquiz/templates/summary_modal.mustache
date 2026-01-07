@@ -1,0 +1,49 @@
+<div class="block-kiwilearner-dailyquiz-summary">
+  <div class="mb-2">
+    <div class="h5 mb-1">{{quizname}}</div>
+    <div class="text-muted">
+      {{correctcount}} / {{questioncount}} correct · {{scorepercent}}%
+    </div>
+  </div>
+
+  {{#hasitems}}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th style="width: 55%;">Question</th>
+          <th>Status</th>
+          <th style="width: 30%;">Link (if wrong)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#items}}
+          <tr class="{{#isincorrect}}table-warning{{/isincorrect}}">
+            <td>{{label}}</td>
+            <td>
+              {{#iscorrect}}<span class="badge bg-success">Correct</span>{{/iscorrect}}
+              {{#isincorrect}}<span class="badge bg-danger">Incorrect</span>{{/isincorrect}}
+            </td>
+            <td>
+              {{#isincorrect}}
+                {{#remediationurl}}
+                  <a href="{{remediationurl}}" target="_blank" rel="noopener">Open related content</a>
+                {{/remediationurl}}
+                {{^remediationurl}}
+                  <span class="text-muted">No link mapped</span>
+                {{/remediationurl}}
+              {{/isincorrect}}
+              {{#iscorrect}}—{{/iscorrect}}
+            </td>
+          </tr>
+        {{/items}}
+      </tbody>
+    </table>
+  </div>
+  {{/hasitems}}
+
+  {{^hasitems}}
+    <div class="text-muted">No results to show.</div>
+  {{/hasitems}}
+</div>
+

@@ -1,30 +1,135 @@
+<div id="kiwilearner_dailyquiz">
+
+{{^summary}}
 <form method="post" action="{{{posturl}}}">
     <input type="hidden" name="id" value="{{courseid}}">
     <input type="hidden" name="sesskey" value="{{sesskey}}">
-
-    <h3>{{quizname}}</h3>
+    <input type="hidden" name="submitted" value="1">
 
     {{#questions}}
     <div class="question">
-        <p><strong>Q{{@index}}: {{text}}</strong></p>
+    <p><strong>Q:</strong> {{text}}</p>
+
         {{#options}}
         <div class="answer">
             <label>
-                <input type="radio" name="q{{../id}}" value="{{id}}"> {{text}}
+              <input type="radio" id="{{qname}}_{{id}}" name="{{qname}}" value="{{id}}">
+              {{text}}
             </label>
         </div>
         {{/options}}
+    
     </div>
     {{/questions}}
 
-    <button type="submit" name="submitquiz" class="btn btn-primary">Submit Quiz</button>
+    <button type="submit" name="submitquiz" value="1" class="btn btn-primary">Submit Quiz</button>
+
 </form>
+{{/summary}}
+
+{{#summary}}
+<div class="card mt-3" id="kiwilearner_dailyquiz_summary">
+  <div class="card-body">
+    <h4 class="card-title">{{quizname}} — Summary</h4>
+    <p class="card-text">
+    	XP earned today: <strong>{{xp_earned}} / {{questioncount}}</strong>
+	{{#isunknown}}<span class="badge bg-secondary text-white ms-2">Pending</span>{{/isunknown}}
+    </p>
+    
+<div class="mt-2 d-flex gap-2">
+  {{#continueurl}}
+    <a class="btn btn-primary btn-sm" href="{{continueurl}}">Next quiz</a>
+  {{/continueurl}}
+
+  {{#summaryurl}}
+    <a class="btn btn-outline-secondary btn-sm" href="{{summaryurl}}">View today’s summary</a>
+  {{/summaryurl}}
+
+</div>
+
+<form method="post" action="{{{posturl}}}" class="mt-2">
+  <input type="hidden" name="id" value="{{courseid}}">
+  <input type="hidden" name="sesskey" value="{{sesskey}}">
+  <input type="hidden" name="emailsummary" value="1">
+
+  <div class="kiwi-emailwrap">
+    <button type="submit"
+            class="btn btn-outline-primary btn-sm w-100"
+            style="max-width: 420px;">
+      Email me this summary
+    </button>
+  </div>
+</form>
+
+    {{#hasitems}}
+    <ul class="list-group">
+      {{#items}}
+      <li class="list-group-item">
+        <div>
+          <strong>{{label}}</strong>
+          {{#iscorrect}} <span class="badge bg-success ms-2">Correct</span>{{/iscorrect}}
+          {{#isincorrect}} <span class="badge bg-danger ms-2">Incorrect</span>{{/isincorrect}}
+        </div>
+
+        <div class="small mt-1">
+          Your: <code>{{youranswer}}</code>
+          {{#iscorrect}} | Correct: <code>{{correctanswer}}</code>{{/iscorrect}}
+          {{#isincorrect}}
+            {{#remediationurl}} | <a href="{{{remediationurl}}}">Review</a>{{/remediationurl}}
+          {{/isincorrect}}
+        </div>
+      </li>
+      {{/items}}
+    </ul>
+    {{/hasitems}}
+  </div>
+</div>
+
+{{/summary}}
 
 {{#results}}
 <h4>Your Score: {{total}}</h4>
-<ul>
-    {{#questions}}
-    <li>{{text}} — Your answer: {{answer}} — Correct: {{correct}}</li>
-    {{/questions}}
-</ul>
+{{#attempt}}
+  <div style="margin-top: 10px;">
+    <strong>Your Score:</strong> {{xp_earned}} / {{questioncount}}
+  </div>
+
+  {{#hasitems}}
+    <div style="margin-top: 10px;">
+      {{#items}}
+        <div style="padding:10px; border:1px solid #eee; border-radius:8px; margin-bottom:8px;">
+          <div style="display:flex; gap:10px; align-items:center;">
+            <div style="font-weight:600;">{{title}}</div>
+            <span class="{{#iscorrect}}badge bg-success{{/iscorrect}}{{^iscorrect}}badge bg-danger{{/iscorrect}}">
+              {{status}}
+            </span>
+          </div>
+      <div style="margin-top:4px;">
+        Your: {{{your}}}
+        {{#iscorrect}} | Correct: {{{correct}}}{{/iscorrect}}
+        {{^iscorrect}}
+          {{#remediationurl}} | <a href="{{{remediationurl}}}">Review</a>{{/remediationurl}}
+        {{/iscorrect}}
+      </div>
+        </div>
+      {{/items}}
+    </div>
+  {{/hasitems}}
+{{/attempt}}
+
+<div class="mt-3">
+  {{#canreattempt}}
+    <a class="btn btn-outline-primary btn-sm w-100" href="{{reattempturl}}">
+      Reattempt incorrect questions
+    </a>
+  {{/canreattempt}}
+
+  {{^canreattempt}}
+    <button class="btn btn-outline-primary btn-sm w-100" disabled>
+      All correct — nothing to reattempt
+    </button>
+  {{/canreattempt}}
+</div>
 {{/results}}
+
+</div>

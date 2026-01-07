@@ -9,6 +9,8 @@
         <FIELD NAME="answer" TYPE="int" LENGTH="10" NOTNULL="true"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="daykey" TYPE="char" LENGTH="8" NOTNULL="true" DEFAULT=""/>
       </FIELDS>
 
       <KEYS>
@@ -20,6 +22,7 @@
       <INDEXES>
         <INDEX NAME="userid_ix" UNIQUE="false" FIELDS="userid"/>
         <INDEX NAME="questionid_ix" UNIQUE="false" FIELDS="questionid"/>
+        <INDEX NAME="usercourse_day_ix" UNIQUE="false" FIELDS="userid,courseid,daykey"/>
       </INDEXES>
     </TABLE>
   </TABLES>
