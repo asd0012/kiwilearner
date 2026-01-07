@@ -212,6 +212,66 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
     return $quizquestions;
 }
 
+if (!function_exists('block_kiwilearner_dailyquiz_get_today_totals_from_temp')) {
+    function block_kiwilearner_dailyquiz_get_today_totals_from_temp(int $userid, int $courseid, string $daykey): array {
+        global $DB;
+
+        $rows = $DB->get_records('block_kiwilearner_dailyquiz_temp', [
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'daykey' => $daykey,
+        ], 'id ASC', 'questionid,answer');
+
+        if (empty($rows)) {
+            return [0, 0]; // [$xp, $total]
+        }
+
+        $qids = [];
+        foreach ($rows as $r) {
+            $qid = (int)($r->questionid ?? 0);
+            if ($qid > 0) { $qids[] = $qid; }
+        }
+        $qids = array_values(array_unique($qids));
+
+        if (empty($qids)) {
+            return [0, 0];
+        }
+
+        // Get correct answer ids for these questions (supports multiple-correct too).
+        [$insql, $params] = $DB->get_in_or_equal($qids, SQL_PARAMS_NAMED, 'qid');
+        $correctrecs = $DB->get_records_select(
+            'question_answers',
+            "question $insql AND fraction >= 0.999",
+            $params,
+            '',
+            'question,id'
+        );
+
+        $correctids = []; // questionid => [answerid, ...]
+        foreach ($correctrecs as $a) {
+            $qid = (int)$a->question;
+            $aid = (int)$a->id;
+            $correctids[$qid][] = $aid;
+        }
+
+        $xp = 0;
+        $total = 0;
+
+        foreach ($rows as $r) {
+            $qid = (int)($r->questionid ?? 0);
+            $aid = (int)($r->answer ?? 0);
+            if ($qid <= 0) { continue; }
+
+            $total++;
+            if (!empty($correctids[$qid]) && in_array($aid, $correctids[$qid], true)) {
+                $xp++;
+            }
+        }
+
+        return [$xp, $total];
+    }
+}
+
 function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, array $answers): void
 {
     global $DB;
@@ -266,4 +326,127 @@ function block_kiwilearner_dailyquiz_get_results(int $userid, int $courseid, ?st
         $out[(int)$r->questionid] = $r;
     }
     return $out;
+}
+
+if (!function_exists('block_kiwilearner_dailyquiz_normalize_answer')) {
+    function block_kiwilearner_dailyquiz_normalize_answer($s): string {
+        $s = html_entity_decode((string)$s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $s = strip_tags($s);
+        $s = preg_replace("/\s+/u", " ", trim($s));
+        return $s;
+    }
+}
+
+if (!function_exists('block_kiwilearner_dailyquiz_is_correct')) {
+    function block_kiwilearner_dailyquiz_is_correct($your, $correct, $yourid = null, $correctid = null): bool {
+        // Best case: compare IDs.
+        if ($yourid !== null && $correctid !== null) {
+            return ((int)$yourid > 0) && ((int)$yourid === (int)$correctid);
+        }
+
+        // Fallback: normalized text compare (same spirit as summary).
+        $y = block_kiwilearner_dailyquiz_normalize_answer($your);
+        $c = block_kiwilearner_dailyquiz_normalize_answer($correct);
+
+        return ($y !== '' && $y === $c);
+    }
+}
+
+
+/**
+ * Build review items for a specific set of question ids (this attempt).
+ */
+function block_kiwilearner_dailyquiz_build_attempt_items(int $userid, int $courseid, string $daykey, array $qids): array
+{
+    global $DB;
+
+    if (empty($qids)) {
+        return [
+            'questioncount' => 0,
+            'xp_earned' => 0,
+            'items' => [],
+            'hasitems' => false,
+        ];
+    }
+
+    // Get only rows for these qids.
+    [$insql, $params] = $DB->get_in_or_equal($qids, SQL_PARAMS_NAMED, 'qid');
+    $params['userid'] = $userid;
+    $params['courseid'] = $courseid;
+    $params['daykey'] = $daykey;
+
+    $rows = $DB->get_records_select(
+        'block_kiwilearner_dailyquiz_temp',
+        "userid = :userid AND courseid = :courseid AND daykey = :daykey AND questionid $insql",
+        $params
+    );
+
+    // Map by questionid so we preserve $qids order without O(n^2) loops.
+    $rowsbyqid = [];
+    foreach ($rows as $r) {
+        $rowsbyqid[(int)$r->questionid] = $r;
+    }
+
+    $items = [];
+    $xp = 0;
+
+    foreach ($qids as $qid) {
+        $qid = (int)$qid;
+        $row = $rowsbyqid[$qid] ?? null;
+        if (!$row) {
+            continue;
+        }
+
+        $q = $DB->get_record('question', ['id' => $qid], 'id,name', IGNORE_MISSING);
+        $qname = $q ? format_string($q->name) : ('Question ' . $qid);
+
+        $answers = $DB->get_records('question_answers', ['question' => $qid], 'id ASC', 'id,answer,fraction');
+
+        $correct = null;
+        $your = null;
+
+        foreach ($answers as $a) {
+            if ($correct === null && (float)$a->fraction >= 0.999) {
+                $correct = $a;
+            }
+            if ((int)$a->id === (int)$row->answer) {
+                $your = $a;
+            }
+        }
+
+        $yourid = (int)($row->answer ?? 0);
+        $correctid = $correct ? (int)$correct->id : null;
+
+        $yourraw = $your ? (string)$your->answer : '';
+        $correctraw = $correct ? (string)$correct->answer : '';
+
+        // ✅ Correctness: compare IDs first, fallback to normalized text.
+        $iscorrect = block_kiwilearner_dailyquiz_is_correct($yourraw, $correctraw, $yourid, $correctid);
+
+        if ($iscorrect) {
+            $xp += 1;
+        }
+
+        $items[] = [
+            'title' => $qname,
+            'iscorrect' => $iscorrect,
+            'status' => $iscorrect ? 'Correct' : 'Incorrect',
+
+            // Display (HTML ok)
+            'your' => $your ? format_text($your->answer, FORMAT_HTML) : '-',
+            'correct' => $correct ? format_text($correct->answer, FORMAT_HTML) : '-',
+
+            // Optional: helps debugging if it ever lies again
+            // 'yourid' => $yourid,
+            // 'correctid' => $correctid,
+            // 'tempscore' => $row->score ?? null,
+        ];
+    }
+
+    return [
+        'questioncount' => count($items),
+        'xp_earned' => $xp,
+        'items' => $items,
+        'hasitems' => !empty($items),
+    ];
 }

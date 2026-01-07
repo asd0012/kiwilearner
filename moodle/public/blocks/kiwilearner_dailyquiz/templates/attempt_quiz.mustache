@@ -72,6 +72,30 @@
 
 {{#results}}
 <h4>Your Score: {{total}}</h4>
+{{#attempt}}
+  <div style="margin-top: 10px;">
+    <strong>Your Score:</strong> {{xp_earned}} / {{questioncount}}
+  </div>
+
+  {{#hasitems}}
+    <div style="margin-top: 10px;">
+      {{#items}}
+        <div style="padding:10px; border:1px solid #eee; border-radius:8px; margin-bottom:8px;">
+          <div style="display:flex; gap:10px; align-items:center;">
+            <div style="font-weight:600;">{{title}}</div>
+            <span class="{{#iscorrect}}badge bg-success{{/iscorrect}}{{^iscorrect}}badge bg-danger{{/iscorrect}}">
+              {{status}}
+            </span>
+          </div>
+          <div style="margin-top:4px;">
+            Your: {{{your}}} | Correct: {{{correct}}}
+          </div>
+        </div>
+      {{/items}}
+    </div>
+  {{/hasitems}}
+{{/attempt}}
+
 <ul>
     {{#questions}}
     <li>{{text}} — Your answer: {{answer}} — Correct: {{correct}}</li>

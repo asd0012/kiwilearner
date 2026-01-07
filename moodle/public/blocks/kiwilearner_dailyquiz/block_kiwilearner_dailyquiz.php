@@ -35,6 +35,7 @@ class block_kiwilearner_dailyquiz extends block_base
 
 		$daykey  = userdate(time(), '%Y%m%d');
 		$prefkey = 'block_kiwilearner_dailyquiz_summary_' . $courseid;
+		[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
 
 		$newquiz = optional_param('newquiz', 0, PARAM_BOOL);
 
@@ -88,8 +89,8 @@ class block_kiwilearner_dailyquiz extends block_base
 
 				block_kiwilearner_dailyquiz_submit_attempt($USER->id,  $courseid, $answers);
 				$daykey = userdate(time(), '%Y%m%d');
+				[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
 				$results = block_kiwilearner_dailyquiz_get_results($USER->id, $courseid, $daykey);
-
 
 				// Build inline summary data from $results.
 				// all questions for TODAY (your get_results currently returns whole day)
@@ -97,6 +98,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				if (!is_array($allquestions)) {
 					$allquestions = [];
 				}
+				
 
 				// "this submit" question count: use the generated qids (not answers count)
 				$attemptcount = is_array($qids) ? count($qids) : 0;
@@ -132,7 +134,7 @@ class block_kiwilearner_dailyquiz extends block_base
 						$items[] = [
 							'label'          => $qtext,
 							'youranswer'     => $ansraw,
-							'correctanswer'  => $correctdisplay, // 用 display，別再塞 raw
+							'correctanswer'  => $correctdisplay,
 							'iscorrect'      => $iscorrect,
 							'isincorrect'    => !$iscorrect,
 							'remediationurl' => !$iscorrect ? $posturl : '',
@@ -143,7 +145,8 @@ class block_kiwilearner_dailyquiz extends block_base
 				};
 
 				// build FULL-DAY summary (for saving + summary page)
-				[$alldayitems, $todaycorrect] = $build_items($allquestions);
+			#	[$alldayitems, $todaycorrect] = $build_items($allquestions);
+				[$alldayitems, $ignoredCorrect] = $build_items($allquestions);  // <-- don't store into $todayxp
 				$todaycount = count($alldayitems);
 
 				// build INLINE summary (for course page right after submit)
@@ -152,11 +155,11 @@ class block_kiwilearner_dailyquiz extends block_base
 				// store FULL DAY in preferences (so summary page can show everything)
 				$summarydata = [
 					'quizname'       => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
-					'questioncount'  => $todaycount,
-					'xp_earned'      => $todaycorrect,
+					'questioncount'  => $todaytotal,
+					'xp_earned'      => $todayxp,
 					'daykey'         => $daykey,
 					'items'          => $alldayitems,
-					'hasitems'       => ($todaycount > 0),
+					'hasitems'       => ($todaytotal > 0),
 				];
 
 				// render only THIS SUBMIT items, but keep XP as TODAY
@@ -168,10 +171,20 @@ class block_kiwilearner_dailyquiz extends block_base
 				$summaryurl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
 				$continueurl = (new moodle_url('/course/view.php', ['id' => $courseid, 'newquiz' => 1]))->out(false);
 
-				if ($todaycount > 0) {
+				#if ($todaycount > 0) {
+				if ($todaytotal > 0) {
 					set_user_preference($prefkey, json_encode($summarydata));
 					$savedsummary = $summarydata;
 				}
+
+				// BEFORE you unset the session storekey:
+				$attemptqids = $SESSION->$storekey['qids'] ?? array_keys($answers);
+
+				// If you need daykey:
+				$daykey = userdate(time(), '%Y%m%d');
+
+				// Build attempt items (however you build it)
+				$attemptitems = block_kiwilearner_dailyquiz_build_attempt_items($USER->id, $courseid, $daykey, $attemptqids);
 
 				$dataresult = (object)[
 					'quizname'    => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
@@ -180,9 +193,10 @@ class block_kiwilearner_dailyquiz extends block_base
 					'courseid'    => $COURSE->id,
 					'sesskey'     => sesskey(),
 					'questions'   => [],
-					'summary'     => $inlinesummary,  // ✅ 只顯示本次 items
+					'summary'     => $inlinesummary, 
 					'summaryurl'  => $summaryurl,
 					'continueurl' => $continueurl,
+					'attempt' => $attemptitems,
 				];
 
 				$this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $dataresult);
@@ -271,24 +285,24 @@ class block_kiwilearner_dailyquiz extends block_base
 			return $this->content;
 		}
 
-		if (!empty($savedsummary)) {
-			$summaryurl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
+		$summaryurl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
 
+		if ($todaytotal > 0) {
 			$this->content->text .= html_writer::div(
-				'XP earned today: <strong>' . (int)($savedsummary['xp_earned'] ?? 0) .
-					' / ' . (int)($savedsummary['questioncount'] ?? 0) . '</strong> ' .
+				'XP earned today: <strong>' . (int)$todayxp . ' / ' . (int)$todaytotal . '</strong> ' .
+					html_writer::link($summaryurl, 'View today\'s summary', ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
+				'alert alert-info mt-2'
+			);
+		} else if (!empty($savedsummary)) {
+			$this->content->text .= html_writer::div(
+				'XP earned today: <strong>0 / 0</strong> ' .
 					html_writer::link($summaryurl, 'View today\'s summary', ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
 				'alert alert-info mt-2'
 			);
 		}
-		// 然後照常顯示 generator form
-		$this->content->text .= $mform->render();
 
-		$this->content->text .= html_writer::link(
-			new moodle_url('/course/view.php', ['id' => $courseid, 'newquiz' => 1]),
-			'Generate quiz',
-			['class' => 'btn btn-primary mt-2']
-		);
+
+		$this->content->text .= $mform->render();
 
 		return $this->content;
 
