@@ -13,6 +13,12 @@ function shuffle_assoc($list)
     return $random;
 }
 
+function block_kiwilearner_dailyquiz_daykey(int $t = null): string {
+    $t = $t ?? time();
+    $p = usergetdate($t); // user timezone
+    return sprintf('%04d%02d%02d', $p['year'], $p['mon'], $p['mday']);
+}
+
 function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], $numquestions = 5)
 {
     global $DB;
@@ -276,7 +282,7 @@ function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, 
 {
     global $DB;
 
-    $daykey = userdate(time(), '%Y%m%d');
+    $daykey = block_kiwilearner_dailyquiz_daykey();
 
     foreach ($answers as $questionid => $answer) {
         $questionid = (int)$questionid;
@@ -311,7 +317,7 @@ function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, 
 function block_kiwilearner_dailyquiz_get_results(int $userid, int $courseid, ?string $daykey = null): array {
     global $DB;
 
-    $daykey = $daykey ?? userdate(time(), '%Y%m%d');
+    $daykey = $daykey ?? block_kiwilearner_dailyquiz_daykey();
 
     $rows = $DB->get_records_select(
         'block_kiwilearner_dailyquiz_temp',
