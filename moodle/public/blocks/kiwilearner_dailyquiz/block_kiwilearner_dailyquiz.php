@@ -268,6 +268,12 @@ class block_kiwilearner_dailyquiz extends block_base
 				$canreattempt = !empty($incorrectqids);   // IMPORTANT: must be !empty, not empty
 
 				$quizname = get_string('pluginname', 'block_kiwilearner_dailyquiz');
+				$emailkey = 'block_kiwilearner_dailyquiz_email_' . (int)$courseid;
+
+				// Provide params to Mustache for the email button form.
+				#$inlinesummary['courseid'] = (int)$courseid;
+				#$inlinesummary['sesskey']  = sesskey();
+				#$inlinesummary['emailsummaryurl'] = (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false);
 
 				$inlinesummary = [
 					'quizname'      => $quizname,
@@ -283,8 +289,19 @@ class block_kiwilearner_dailyquiz extends block_base
 
 					'canreattempt'  => $canreattempt,
 					'reattempturl'  => $reattempturl,
-
 					'incorrectcount' => count($attemptincorrectqids),
+					'courseid'       => (int)$courseid,
+					'sesskey'        => sesskey(),
+					'emailsummaryurl' => (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false),
+				];
+
+
+				// Save what we want to email (small + consistent with UI).
+				$SESSION->$emailkey = [
+					'time'   => time(),
+					'daykey' => $daykey,
+					'summary' => $inlinesummary,
+					'items'  => $inlineitems,
 				];
 
 
