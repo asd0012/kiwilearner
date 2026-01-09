@@ -12,13 +12,17 @@ $PAGE->set_pagelayout('report');
 $PAGE->set_title('Daily Quiz Summary');
 $PAGE->set_heading('Daily Quiz Summary');
 
-$daykey  = userdate(time(), '%Y%m%d');
 require_once(__DIR__ . '/lib.php');
 
 global $DB, $USER;
 
-$daykey = optional_param('day', userdate(time(), '%Y%m%d'), PARAM_ALPHANUM);
+$dayparam = optional_param('day', '', PARAM_ALPHANUM);
 
+if ($dayparam !== '' && preg_match('/^\d{8}$/', $dayparam)) {
+    $daykey = $dayparam; // only accept correct 8-digit format
+} else {
+    $daykey = block_kiwilearner_dailyquiz_daykey();
+}
 $rows = block_kiwilearner_dailyquiz_get_results($USER->id, $courseid, $daykey);
 
 $items = [];
@@ -85,3 +89,5 @@ $data = (object)[
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $data);
 echo $OUTPUT->footer();
+
+error_log("DailyQuiz summary uid={$USER->id} courseid={$courseid} daykey={$daykey}");

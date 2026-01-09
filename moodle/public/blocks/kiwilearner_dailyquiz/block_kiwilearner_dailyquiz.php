@@ -33,7 +33,7 @@ class block_kiwilearner_dailyquiz extends block_base
 		$courseurl = new moodle_url('/course/view.php', ['id' => $courseid]);
 		$posturl   = $courseurl->out(false);
 
-		$daykey  = userdate(time(), '%Y%m%d');
+		$daykey = block_kiwilearner_dailyquiz_daykey();
 		$prefkey = 'block_kiwilearner_dailyquiz_summary_' . $courseid;
 		[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
 
@@ -129,7 +129,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				$attemptqids = $qids; 
 
 				block_kiwilearner_dailyquiz_submit_attempt($USER->id,  $courseid, $answers);
-				$daykey = userdate(time(), '%Y%m%d');
+				$daykey = block_kiwilearner_dailyquiz_daykey();
 				[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
 				$results = block_kiwilearner_dailyquiz_get_results($USER->id, $courseid, $daykey);
 
@@ -265,7 +265,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				$attemptqids = $SESSION->$storekey['qids'] ?? array_keys($answers);
 
 				// If you need daykey:
-				$daykey = userdate(time(), '%Y%m%d');
+				$daykey = block_kiwilearner_dailyquiz_daykey();
 
 				// Build attempt items (however you build it)
 				$attemptitems = block_kiwilearner_dailyquiz_build_attempt_items($USER->id, $courseid, $daykey, $attemptqids);
