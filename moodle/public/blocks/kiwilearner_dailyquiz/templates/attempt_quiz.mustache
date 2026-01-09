@@ -32,7 +32,7 @@
   <div class="card-body">
     <h4 class="card-title">{{quizname}} — Summary</h4>
     <p class="card-text">
-    	XP earned today: <strong>{{xp_earned}} / {{questioncount}}</strong>
+    	XP earned today: <strong>{{xp_earned}} / {{xp_target}}</strong>
 	{{#isunknown}}<span class="badge bg-secondary text-white ms-2">Pending</span>{{/isunknown}}
     </p>
     
@@ -88,7 +88,6 @@
 {{/summary}}
 
 {{#results}}
-<h4>Your Score: {{total}}</h4>
 {{#attempt}}
   <div style="margin-top: 10px;">
     <strong>Your Score:</strong> {{xp_earned}} / {{questioncount}}

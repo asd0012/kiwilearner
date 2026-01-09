@@ -36,7 +36,21 @@ class block_kiwilearner_dailyquiz extends block_base
 		$daykey = block_kiwilearner_dailyquiz_daykey();
 		$prefkey = 'block_kiwilearner_dailyquiz_summary_' . $courseid;
 		[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+		$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
 
+		$data['xp_target'] = $xptarget;
+
+		if (!empty($data['summary']) && is_array($data['summary'])) {
+			$data['summary']['xp_target'] = $xptarget;
+		}
+
+		if (!empty($data['results']) && is_array($data['results'])) {
+			$data['results']['xp_target'] = $xptarget;
+
+			if (!empty($data['results']['attempt']) && is_array($data['results']['attempt'])) {
+				$data['results']['attempt']['xp_target'] = $xptarget;
+			}
+		}
 		$newquiz = optional_param('newquiz', 0, PARAM_BOOL);
 
 		// =========================================================
@@ -131,6 +145,23 @@ class block_kiwilearner_dailyquiz extends block_base
 				block_kiwilearner_dailyquiz_submit_attempt($USER->id,  $courseid, $answers);
 				$daykey = block_kiwilearner_dailyquiz_daykey();
 				[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+
+				$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
+
+				$data['xp_target'] = $xptarget;
+
+				if (!empty($data['summary']) && is_array($data['summary'])) {
+					$data['summary']['xp_target'] = $xptarget;
+				}
+
+				if (!empty($data['results']) && is_array($data['results'])) {
+					$data['results']['xp_target'] = $xptarget;
+
+					if (!empty($data['results']['attempt']) && is_array($data['results']['attempt'])) {
+						$data['results']['attempt']['xp_target'] = $xptarget;
+					}
+				}
+
 				$results = block_kiwilearner_dailyquiz_get_results($USER->id, $courseid, $daykey);
 
 				// Build inline summary data from $results.
@@ -202,6 +233,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				$summarydata = [
 					'quizname'       => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
 					'questioncount'  => $todaytotal,
+					'xp_target'      => $xptarget,       // ✅ add this
 					'xp_earned'      => $todayxp,
 					'daykey'         => $daykey,
 					'items'          => $alldayitems,
@@ -240,6 +272,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				$inlinesummary = [
 					'quizname'      => $quizname,
 					'xp_earned'     => $todayxp,
+					'xp_target'      => $xptarget,       // ✅ add this
 					'questioncount' => $todaytotal,
 
 					'continueurl'   => $continueurl,
@@ -483,7 +516,7 @@ class block_kiwilearner_dailyquiz extends block_base
 
 		if ($todaytotal > 0) {
 			$this->content->text .= html_writer::div(
-				'XP earned today: <strong>' . (int)$todayxp . ' / ' . (int)$todaytotal . '</strong> ' .
+				'XP earned today: <strong>' . (int)$todayxp . ' / ' . (int)$xptarget . '</strong> ' .
 					html_writer::link($summaryurl, 'View today\'s summary', ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
 				'alert alert-info mt-2'
 			);

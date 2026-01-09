@@ -19,6 +19,18 @@ function block_kiwilearner_dailyquiz_daykey(int $t = null): string {
     return sprintf('%04d%02d%02d', $p['year'], $p['mon'], $p['mday']);
 }
 
+function block_kiwilearner_dailyquiz_get_xp_target(int $userid, int $courseid, int $default = 10): int {
+    global $DB;
+
+    $goal = $DB->get_field('local_kiwilearner_goal', 'xp_target', [
+        'userid' => $userid,
+        'courseid' => $courseid,
+    ]);
+
+    $goal = (int)($goal ?? 0);
+    return ($goal > 0) ? $goal : $default;
+}
+
 function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], $numquestions = 5)
 {
     global $DB;
@@ -287,7 +299,6 @@ function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, 
     foreach ($answers as $questionid => $answer) {
         $questionid = (int)$questionid;
 
-        // 1) 同一題同一天同一課，只保留一筆（避免重複累積）
         $DB->delete_records_select(
             'block_kiwilearner_dailyquiz_temp',
             'userid = ? AND courseid = ? AND daykey = ? AND questionid = ?',
@@ -301,11 +312,9 @@ function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, 
             'daykey'      => $daykey,
             'questionid'  => $questionid,
 
-            // 重要：你 DB schema 的 answer 是 int。
-            // 如果你實際上有短答/字串答案，這裡會被 MySQL 轉成 0，資料直接爛掉。
             'answer'      => is_numeric($answer) ? (int)$answer : 0,
 
-            'score'       => 0, // 你原本怎麼算就怎麼塞
+            'score'       => 0, 
             'timecreated' => time(),
         ];
 
@@ -326,7 +335,6 @@ function block_kiwilearner_dailyquiz_get_results(int $userid, int $courseid, ?st
         'timecreated ASC'
     );
 
-    // 你想回傳什麼格式就整理，這邊給你一個 map：qid => row
     $out = [];
     foreach ($rows as $r) {
         $out[(int)$r->questionid] = $r;

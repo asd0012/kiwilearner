@@ -27,6 +27,7 @@ $rows = block_kiwilearner_dailyquiz_get_results($USER->id, $courseid, $daykey);
 
 $items = [];
 $xp = 0;
+$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
 
 foreach ($rows as $qid => $r) {
     $qid = (int)$qid;
@@ -70,6 +71,7 @@ foreach ($rows as $qid => $r) {
 $savedsummary = [
     'daykey'        => $daykey,
     'xp_earned'     => $xp,
+	'xp_target'      => $xptarget,       // ✅ add this
     'questioncount' => count($items),
     'hasitems'      => !empty($items),
     'items'         => $items,
@@ -89,5 +91,3 @@ $data = (object)[
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $data);
 echo $OUTPUT->footer();
-
-error_log("DailyQuiz summary uid={$USER->id} courseid={$courseid} daykey={$daykey}");
