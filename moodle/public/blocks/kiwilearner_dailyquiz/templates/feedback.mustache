@@ -1,0 +1,114 @@
+{{#feedback}}
+<div class="card mt-3" id="kiwilearner_dailyquiz_feedback">
+  <div class="card-body">
+    <h4 class="card-title">{{quizname}} — Feedback</h4>
+
+    {{#is_attempt1_all_correct}}
+      <div class="alert alert-success mb-2">✅ All correct on Attempt 1.</div>
+    {{/is_attempt1_all_correct}}
+
+    {{#is_attempt1_partial}}
+      <div class="alert alert-warning mb-2">
+        Attempt 1 submitted. You can reattempt or submit final.
+      </div>
+    {{/is_attempt1_partial}}
+
+    {{#is_attempt2_final}}
+      <div class="alert alert-info mb-2">Final attempt submitted.</div>
+    {{/is_attempt2_final}}
+
+    <div class="small text-muted mb-2">Attempt {{attemptnum}} / {{attemptmax}}</div>
+
+    <p class="card-text mb-2">
+      XP earned today: <strong>{{xp}}</strong>
+    </p>
+
+    {{#hasitems}}
+      <ul class="list-group mb-3">
+        {{#items}}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="me-2"><strong>{{label}}</strong></div>
+
+              <div>
+                {{#iscorrect}}<span class="badge bg-success ms-2">Correct</span>{{/iscorrect}}
+                {{#isincorrect}}<span class="badge bg-danger ms-2">Incorrect</span>{{/isincorrect}}
+                {{#isunknown}}<span class="badge bg-secondary ms-2">Pending</span>{{/isunknown}}
+              </div>
+            </div>
+
+            <div class="small mt-2">
+              {{#youranswer}}Your: <code>{{youranswer}}</code>{{/youranswer}}
+              {{#correctanswer}} | Correct: <code>{{correctanswer}}</code>{{/correctanswer}}
+              {{#remediationurl}} | <a href="{{remediationurl}}">Review</a>{{/remediationurl}}
+            </div>
+          </li>
+        {{/items}}
+      </ul>
+    {{/hasitems}}
+
+<form method="post" action="{{posturl}}" id="dq-feedback-actions" class="m-0">
+  <input type="hidden" name="id" value="{{courseid}}">
+  <input type="hidden" name="sesskey" value="{{sesskey}}">
+  <input type="hidden" name="dq_action" value="">
+
+  {{#showemailoption}}
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" value="1"
+             id="kiwilearner_email_summary" name="emailsummary">
+      <label class="form-check-label" for="kiwilearner_email_summary">
+        Email me a copy of this summary
+      </label>
+    </div>
+  {{/showemailoption}}
+
+  <div class="d-flex gap-2">
+{{#showreattempt}}
+ <form method="post" action="{{posturl}}" class="m-0">
+	<input type="hidden" name="id" value="{{courseid}}">
+	<input type="hidden" name="sesskey" value="{{sesskey}}">
+	<input type="hidden" name="reattempt" value="1">
+	<button type="submit" class="btn btn-outline-primary">Reattempt</button>
+ </form>
+{{/showreattempt}}
+
+    {{#showfinalsubmit}}
+      <button type="submit" class="btn btn-primary" data-action="finalsubmit">
+        Submit final
+      </button>
+    {{/showfinalsubmit}}
+  </div>
+</form>
+
+{{#showfinish}}
+  <div class="mt-2">
+    <a class="btn btn-primary" href="{{finishurl}}">Finish</a>
+  </div>
+{{/showfinish}}
+
+{{#js}}
+require(['jquery'], function($) {
+  var $form = $('#dq-feedback-actions');
+  if (!$form.length) return;
+
+  $form.find('button[data-action]').on('click', function(e) {
+    var action = $(this).data('action');
+    $form.find('input[name="dq_action"]').val(action);
+
+    var $cb = $('#kiwilearner_email_summary');
+    var wantsEmail = $cb.length ? $cb.is(':checked') : false;
+
+    // Popup reminder if not ticked.
+    if (!wantsEmail) {
+      if (!confirm('You did not tick "Email me a copy of this summary". Continue?')) {
+        e.preventDefault();
+      }
+    }
+  });
+});
+{{/js}}
+
+  </div>
+</div>
+{{/feedback}}
+

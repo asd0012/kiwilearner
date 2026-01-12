@@ -1,0 +1,159 @@
+<?php
+require_once(__DIR__ . '/../../config.php');
+
+$courseid = required_param('id', PARAM_INT);
+require_login($courseid);
+
+$context = context_course::instance($courseid);
+
+$PAGE->set_context($context);
+$PAGE->set_url(new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]));
+$PAGE->set_pagelayout('report');
+$PAGE->set_title('Daily Quiz Summary');
+$PAGE->set_heading('Daily Quiz Summary');
+
+require_once(__DIR__ . '/lib.php');
+
+global $DB, $USER;
+
+$dayparam = optional_param('day', '', PARAM_ALPHANUM);
+
+if ($dayparam !== '' && preg_match('/^\d{8}$/', $dayparam)) {
+    $daykey = $dayparam; // only accept correct 8-digit format
+} else {
+    $daykey = block_kiwilearner_dailyquiz_daykey();
+}
+
+
+$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
+
+// --- Handle "Email me this summary" POST (must run before any output) ---
+$doemail = optional_param('emailsummary', 0, PARAM_BOOL);
+
+if ($doemail) {
+    require_sesskey();
+
+    // Use the SAME daykey the page is showing (supports ?day=YYYYMMDD)
+    [$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+
+    $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
+    $coursename = format_string($course->fullname, true, ['context' => $context]);
+
+    // Pretty date from daykey
+    $datestr = $daykey;
+    $dt = \DateTime::createFromFormat('Ymd', $daykey);
+    if ($dt) {
+        $datestr = $dt->format('Y-m-d');
+    }
+
+    $summaryurl = new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', [
+        'id' => $courseid,
+        'day' => $daykey,
+    ]);
+
+    $courseurl = new moodle_url('/course/view.php', ['id' => $courseid]);
+
+    $subject = "KiwiLearner Daily Quiz Summary (" . $coursename . ") - " . $datestr;
+
+    $text = "Hi {$USER->firstname},\n\n"
+          . "Course: {$coursename}\n"
+          . "Quiz: Daily Quiz\n"
+          . "Date: {$datestr}\n"
+          . "XP earned today: {$todayxp} / {$xptarget}\n\n"
+          . "View course: " . $courseurl->out(false) . "\n"
+          . "View full summary: " . $summaryurl->out(false) . "\n\n"
+          . "— KiwiLearner\n";
+
+    $html = "<p>Hi " . s($USER->firstname) . ",</p>"
+          . "<p><strong>Course:</strong> " . s($coursename) . "<br>"
+          . "<strong>Quiz:</strong> Daily Quiz<br>"
+          . "<strong>Date:</strong> " . s($datestr) . "<br>"
+          . "<strong>XP earned today:</strong> " . s("{$todayxp} / {$xptarget}") . "</p>"
+          . "<p>View course: <a href=\"" . s($courseurl->out(false)) . "\">" . s($courseurl->out(false)) . "</a><br>"
+          . "View full summary: <a href=\"" . s($summaryurl->out(false)) . "\">" . s($summaryurl->out(false)) . "</a></p>"
+          . "<p>— KiwiLearner</p>";
+
+    $from = \core_user::get_noreply_user();
+    $ok = email_to_user($USER, $from, $subject, $text, $html);
+
+    $returnurl = new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', [
+        'id' => $courseid,
+        'day' => $daykey,
+    ]);
+
+    if ($ok) {
+        redirect($returnurl, 'Summary email sent!', 2, \core\output\notification::NOTIFY_SUCCESS);
+    } else {
+        redirect($returnurl, 'Failed to send summary email.', 3, \core\output\notification::NOTIFY_ERROR);
+    }
+}
+
+$rows = block_kiwilearner_dailyquiz_get_results($USER->id, $courseid, $daykey);
+
+$items = [];
+
+foreach ($rows as $qid => $r) {
+    $qid = (int)$qid;
+
+    $q = $DB->get_record('question', ['id' => $qid], 'id,name', IGNORE_MISSING);
+    $label = $q ? $q->name : "Q{$qid}";
+
+    $your = (string)$r->answer;
+    if (!empty($r->answer)) {
+        $ans = $DB->get_record('question_answers', ['id' => (int)$r->answer], 'id,answer', IGNORE_MISSING);
+        if ($ans) {
+            $your = trim(strip_tags($ans->answer));
+        }
+    }
+
+    $correctrec = $DB->get_record_sql(
+        'SELECT id, answer
+           FROM {question_answers}
+          WHERE question = :qid AND fraction > 0
+       ORDER BY fraction DESC, id ASC',
+        ['qid' => $qid],
+        IGNORE_MISSING
+    );
+
+    $correct = $correctrec ? trim(strip_tags($correctrec->answer)) : '';
+    $correctid = $correctrec ? (int)$correctrec->id : 0;
+
+    $iscorrect = ((int)$r->answer === $correctid) || ((float)$r->score > 0);
+
+    $items[] = [
+        'label'         => s($label),
+        'iscorrect'     => $iscorrect,
+        'isincorrect'   => !$iscorrect,
+        'youranswer'    => $your,
+        'correctanswer' => $correct,
+    ];
+}
+
+$daykey = block_kiwilearner_dailyquiz_daykey();
+
+// ✅ source of truth for totals (same as course homepage)
+[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+
+$savedsummary = [
+  'daykey'       => $daykey,
+  'xp_earned'    => $todayxp,       // <= use totals
+  'xp_target'    => $xptarget,
+  'questioncount'=> $todaytotal,    // <= use totals
+  'hasitems'     => !empty($items),
+  'items'        => $items,
+  'isunknown'    => false,
+];
+
+$data = (object)[
+    'quizname'    => get_string('pluginname', 'block_kiwilearner_dailyquiz'),
+    'posturl'     => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
+    'courseid'    => $courseid,
+    'sesskey'     => sesskey(),
+    'questions'   => [],
+    'summary'     => $savedsummary,
+    'continueurl' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
+];
+
+echo $OUTPUT->header();
+echo $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $data);
+echo $OUTPUT->footer();

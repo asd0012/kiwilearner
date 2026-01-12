@@ -7,3 +7,5 @@ $string['kiwilearner_dailyquiz:myaddinstance'] = 'Add a new Daily Quiz block to 
 $string['numquestions'] = 'Number of questions';
 $string['topics'] = 'Topics (comma separated)';
 $string['generatequiz'] = 'Generate Quiz';
+$string['emailsummary'] = 'Email me the summary';
+

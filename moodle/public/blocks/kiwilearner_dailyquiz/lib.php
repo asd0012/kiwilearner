@@ -1,7 +1,8 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-function shuffle_assoc($list) {
+function shuffle_assoc($list)
+{
     if (!is_array($list)) return $list;
     $keys = array_keys($list);
     shuffle($keys);
@@ -12,10 +13,29 @@ function shuffle_assoc($list) {
     return $random;
 }
 
-function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], $numquestions = 5) {
+function block_kiwilearner_dailyquiz_daykey(int $t = null): string {
+    $t = $t ?? time();
+    $p = usergetdate($t); // user timezone
+    return sprintf('%04d%02d%02d', $p['year'], $p['mon'], $p['mday']);
+}
+
+function block_kiwilearner_dailyquiz_get_xp_target(int $userid, int $courseid, int $default = 10): int {
     global $DB;
 
-    error_log('DailyQuiz RUNNING FILE='.__FILE__);
+    $goal = $DB->get_field('local_kiwilearner_goal', 'xp_target', [
+        'userid' => $userid,
+        'courseid' => $courseid,
+    ]);
+
+    $goal = (int)($goal ?? 0);
+    return ($goal > 0) ? $goal : $default;
+}
+
+function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], $numquestions = 5)
+{
+    global $DB;
+
+    error_log('DailyQuiz RUNNING FILE=' . __FILE__);
     error_log('DailyQuiz MARKER=2025-12-16-08:05');
 
 
@@ -27,9 +47,9 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
     }
 
     // Normalise topics (comma-separated user input often becomes ['']).
-    $topics = array_values(array_unique(array_filter(array_map(function($t) {
+    $topics = array_values(array_unique(array_filter(array_map(function ($t) {
         return trim(core_text::strtolower($t));
-    }, (array)$topics), function($t) {
+    }, (array)$topics), function ($t) {
         return $t !== '';
     })));
 
@@ -64,7 +84,7 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
     list($ctxsql, $ctxparams) = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED, 'ctx');
 
 
-    error_log('DailyQuiz courseid='.$courseid.' course->category='.$course->category.' searching contexts: '.json_encode($contextids));
+    error_log('DailyQuiz courseid=' . $courseid . ' course->category=' . $course->category . ' searching contexts: ' . json_encode($contextids));
 
     $readystatus = \core_question\local\bank\question_version_status::QUESTION_STATUS_READY; // Moodle 5.x. :contentReference[oaicite:5]{index=5}
 
@@ -122,9 +142,9 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
         ], $tagparams);
     }
 
-    error_log('DailyQuiz courseid='.$courseid.' course->category='.$course->category);
-    error_log("DailyQuiz SQL:\n".$sql);
-    error_log("DailyQuiz params:\n".json_encode($params));
+    error_log('DailyQuiz courseid=' . $courseid . ' course->category=' . $course->category);
+    error_log("DailyQuiz SQL:\n" . $sql);
+    error_log("DailyQuiz params:\n" . json_encode($params));
 
     // Memory-safe random selection (reservoir sampling) from the matching IDs.
     $selectedids = [];
@@ -202,47 +222,286 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
         ];
     }
 
-    debugging('DailyQuiz: generated '.count($quizquestions).' questions', DEBUG_DEVELOPER);
-    error_log('DailyQuiz course '.$courseid.' generated '.count($quizquestions).' questions: ' .
+    #debugging('DailyQuiz: generated '.count($quizquestions).' questions', DEBUG_DEVELOPER);
+    error_log('DailyQuiz course ' . $courseid . ' generated ' . count($quizquestions) . ' questions: ' .
         json_encode(array_column($quizquestions, 'id')));
 
 
     return $quizquestions;
 }
 
-function block_kiwilearner_dailyquiz_submit_attempt($userid, $answers) {
+function block_kiwilearner_dailyquiz_get_today_totals_from_temp(int $userid, int $courseid, string $daykey): array {
     global $DB;
-    foreach ($answers as $questionid => $answer) {
-        $question = $DB->get_record('question', ['id' => $questionid]);
-        $score = 0;
-        $ansrecord = $DB->get_record('question_answers', ['id' => $answer]);
-        if ($ansrecord && $ansrecord->fraction > 0) {
-            $score = 1;
+
+    $sql = "SELECT questionid, MAX(score) AS bestscore
+              FROM {block_kiwilearner_dailyquiz_temp}
+             WHERE userid = :userid
+               AND courseid = :courseid
+               AND daykey = :daykey
+          GROUP BY questionid";
+    $rows = $DB->get_records_sql($sql, [
+        'userid' => $userid,
+        'courseid' => $courseid,
+        'daykey' => $daykey,
+    ]);
+
+    if (empty($rows)) {
+        return [0, 0];
+    }
+
+    $total = count($rows); // distinct questions today
+    $xp = 0;
+    foreach ($rows as $r) {
+        if ((float)$r->bestscore > 0) {
+            $xp++;
         }
-        $record = new stdClass();
-        $record->userid = $userid;
-        $record->questionid = $questionid;
-        $record->answer = $answer;
-        $record->score = $score;
-        $DB->insert_record('block_kiwilearner_dailyquiz_temp', $record);
+    }
+    return [$xp, $total];
+}
+
+
+function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, array $answers): void {
+    global $DB;
+
+    $daykey = block_kiwilearner_dailyquiz_daykey();
+
+    foreach ($answers as $questionid => $answerid) {
+        $questionid = (int)$questionid;
+        $answerid   = is_numeric($answerid) ? (int)$answerid : 0;
+
+        if ($questionid <= 0) {
+            continue;
+        }
+
+        // Compute score from selected answer's fraction.
+        $score = 0.0;
+        if ($answerid > 0) {
+            $ans = $DB->get_record('question_answers', ['id' => $answerid], 'id,question,fraction', IGNORE_MISSING);
+            if ($ans && (int)$ans->question === $questionid) {
+                $score = (float)$ans->fraction; // usually 1.0 for correct, 0.0 for wrong
+            }
+        }
+
+        // One row per (userid, courseid, daykey, questionid).
+        $existing = $DB->get_record('block_kiwilearner_dailyquiz_temp', [
+            'userid'     => $userid,
+            'courseid'   => $courseid,
+            'daykey'     => $daykey,
+            'questionid' => $questionid,
+        ], 'id,score', IGNORE_MISSING);
+
+        if ($existing) {
+            // Keep best score so XP never decreases.
+            $best = max((float)$existing->score, $score);
+
+            $DB->update_record('block_kiwilearner_dailyquiz_temp', (object)[
+                'id'          => (int)$existing->id,
+                'answer'      => $answerid,   // keep latest answer for display if you want
+                'score'       => $best,       // keep best score for XP
+                'timecreated' => time(),
+            ]);
+        } else {
+            $DB->insert_record('block_kiwilearner_dailyquiz_temp', (object)[
+                'userid'     => $userid,
+                'courseid'   => $courseid,
+                'daykey'     => $daykey,
+                'questionid' => $questionid,
+                'answer'     => $answerid,
+                'score'      => $score,
+                'timecreated'=> time(),
+            ]);
+        }
     }
 }
 
-function block_kiwilearner_dailyquiz_get_results($userid) {
+
+
+
+function block_kiwilearner_dailyquiz_get_results(int $userid, int $courseid, ?string $daykey = null): array {
     global $DB;
-    $attempts = $DB->get_records('block_kiwilearner_dailyquiz_temp', ['userid' => $userid]);
-    $results = ['total' => 0, 'questions' => []];
-    foreach ($attempts as $a) {
-        $question = $DB->get_record('question', ['id' => $a->questionid]);
-        $answer = $DB->get_record('question_answers', ['id' => $a->answer]);
-        $results['total'] += $a->score;
-        $results['questions'][] = [
-            'text' => $question->questiontext,
-            'answer' => $answer ? $answer->answer : '',
-            'correct' => ($a->score > 0) ? 'Yes' : 'No'
+
+    $daykey = $daykey ?? block_kiwilearner_dailyquiz_daykey();
+
+    $rows = $DB->get_records_select(
+        'block_kiwilearner_dailyquiz_temp',
+        'userid = ? AND courseid = ? AND daykey = ?',
+        [$userid, $courseid, $daykey],
+        'timecreated ASC'
+    );
+
+    $out = [];
+    foreach ($rows as $r) {
+        $out[(int)$r->questionid] = $r;
+    }
+    return $out;
+}
+
+if (!function_exists('block_kiwilearner_dailyquiz_normalize_answer')) {
+    function block_kiwilearner_dailyquiz_normalize_answer($s): string {
+        $s = html_entity_decode((string)$s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $s = strip_tags($s);
+        $s = preg_replace("/\s+/u", " ", trim($s));
+        return $s;
+    }
+}
+
+if (!function_exists('block_kiwilearner_dailyquiz_is_correct')) {
+    function block_kiwilearner_dailyquiz_is_correct($your, $correct, $yourid = null, $correctid = null): bool {
+        // Best case: compare IDs.
+        if ($yourid !== null && $correctid !== null) {
+            return ((int)$yourid > 0) && ((int)$yourid === (int)$correctid);
+        }
+
+        // Fallback: normalized text compare (same spirit as summary).
+        $y = block_kiwilearner_dailyquiz_normalize_answer($your);
+        $c = block_kiwilearner_dailyquiz_normalize_answer($correct);
+
+        return ($y !== '' && $y === $c);
+    }
+}
+
+
+/**
+ * Build review items for a specific set of question ids (this attempt).
+ */
+function block_kiwilearner_dailyquiz_build_attempt_items(int $userid, int $courseid, string $daykey, array $qids): array
+{
+    global $DB;
+
+    if (empty($qids)) {
+        return [
+            'questioncount' => 0,
+            'xp_earned' => 0,
+            'items' => [],
+            'hasitems' => false,
         ];
     }
-    return $results;
+
+    // Get only rows for these qids.
+    [$insql, $params] = $DB->get_in_or_equal($qids, SQL_PARAMS_NAMED, 'qid');
+    $params['userid'] = $userid;
+    $params['courseid'] = $courseid;
+    $params['daykey'] = $daykey;
+
+    $rows = $DB->get_records_select(
+        'block_kiwilearner_dailyquiz_temp',
+        "userid = :userid AND courseid = :courseid AND daykey = :daykey AND questionid $insql",
+        $params
+    );
+
+    // Map by questionid so we preserve $qids order without O(n^2) loops.
+    $rowsbyqid = [];
+    foreach ($rows as $r) {
+        $rowsbyqid[(int)$r->questionid] = $r;
+    }
+
+    $items = [];
+    $xp = 0;
+
+    foreach ($qids as $qid) {
+        $qid = (int)$qid;
+        $row = $rowsbyqid[$qid] ?? null;
+        if (!$row) {
+            continue;
+        }
+
+        $q = $DB->get_record('question', ['id' => $qid], 'id,name', IGNORE_MISSING);
+        $qname = $q ? format_string($q->name) : ('Question ' . $qid);
+
+        $answers = $DB->get_records('question_answers', ['question' => $qid], 'id ASC', 'id,answer,fraction');
+
+        $correct = null;
+        $your = null;
+
+        foreach ($answers as $a) {
+            if ($correct === null && (float)$a->fraction >= 0.999) {
+                $correct = $a;
+            }
+            if ((int)$a->id === (int)$row->answer) {
+                $your = $a;
+            }
+        }
+
+        $yourid = (int)($row->answer ?? 0);
+        $correctid = $correct ? (int)$correct->id : null;
+
+        $yourraw = $your ? (string)$your->answer : '';
+        $correctraw = $correct ? (string)$correct->answer : '';
+
+        // ✅ Correctness: compare IDs first, fallback to normalized text.
+        $iscorrect = block_kiwilearner_dailyquiz_is_correct($yourraw, $correctraw, $yourid, $correctid);
+
+        if ($iscorrect) {
+            $xp += 1;
+        }
+
+        $items[] = [
+            'title' => $qname,
+            'iscorrect' => $iscorrect,
+            'status' => $iscorrect ? 'Correct' : 'Incorrect',
+
+            // Display (HTML ok)
+            'your' => $your ? format_text($your->answer, FORMAT_HTML) : '-',
+            'correct' => $correct ? format_text($correct->answer, FORMAT_HTML) : '-',
+
+            // Optional: helps debugging if it ever lies again
+            // 'yourid' => $yourid,
+            // 'correctid' => $correctid,
+            // 'tempscore' => $row->score ?? null,
+        ];
+    }
+
+    return [
+        'questioncount' => count($items),
+        'xp_earned' => $xp,
+        'items' => $items,
+        'hasitems' => !empty($items),
+    ];
 }
 
-?>
+function block_kiwilearner_dailyquiz_get_questions_by_ids(int $courseid, array $qids): array
+{
+    global $DB;
+
+    $qids = array_values(array_unique(array_filter(array_map('intval', $qids), fn($id) => $id > 0)));
+    if (empty($qids)) {
+        return [];
+    }
+
+    list($insql, $params) = $DB->get_in_or_equal($qids, SQL_PARAMS_NAMED);
+
+    // Only multichoice questions
+    $questions = $DB->get_records_select('question', "id $insql AND qtype = :qtype", $params + ['qtype' => 'multichoice']);
+    if (empty($questions)) {
+        return [];
+    }
+
+    $out = [];
+
+    foreach ($qids as $qid) {
+        if (empty($questions[$qid])) {
+            continue;
+        }
+
+        $q = $questions[$qid];
+
+        // Answers
+        $answers = $DB->get_records('question_answers', ['question' => $qid], 'id ASC', 'id, answer');
+
+        $opts = [];
+        foreach ($answers as $a) {
+            $opts[] = [
+                'id'   => (int)$a->id,
+                'text' => trim(strip_tags($a->answer)), // keep it simple for now
+            ];
+        }
+
+        $out[] = [
+            'id'      => (int)$q->id,
+            'text'    => trim(strip_tags($q->questiontext)),
+            'options' => $opts,
+        ];
+    }
+
+    return $out;
+}
