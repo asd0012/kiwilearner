@@ -25,11 +25,15 @@ moodle/public/blocks/**
 moodle/blocks/**
 
 # BUT keep our plugin tracked
-#!moodle/local/kiwilearner/
-#!moodle/local/kiwilearner/**
+# Re-allow directory traversal
+!moodle/public/
+!moodle/public/mod/
 !moodle/public/local/
 !moodle/public/local/kiwilearner/
 !moodle/public/local/kiwilearner/**
+
+!moodle/public/mod/kiwivideo/
+!moodle/public/mod/kiwivideo/**
 !moodle/public/blocks/
 !moodle/public/blocks/kiwilearner_dailyquiz/
 !moodle/public/blocks/kiwilearner_dailyquiz/**

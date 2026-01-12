@@ -1,113 +1,96 @@
 <?php
-namespace local_kiwilearner\utils;
+namespace local_kiwilearner\events;
 
 defined('MOODLE_INTERNAL') || die();
 
 use context_course;
+use local_kiwilearner\utils\xp_engine;
 
-class xp_engine {
+
+/**
+ * Event observer callbacks (thin wrappers).
+ *
+ * Keep this file focused on:
+ *  - extracting ids from events
+ *  - calling xp_engine
+ *
+ * Put all DB + awarding logic in xp_engine.
+ */
+class xp_award {
 
     /**
-     * Award participation XP for each question in a submitted attempt.
+     * Observer: \mod_quiz\event\attempt_submitted
+     *
+     * Award participation XP for each question in the submitted attempt.
+     *
+     * @param \mod_quiz\event\attempt_submitted $event
      */
-    public static function award_participation_xp(int $userid, int $courseid, int $attemptid): void {
-        global $DB;
+        public static function attempt_submitted(\mod_quiz\event\attempt_submitted $event): void {
+        // For attempt_submitted, objectid is usually the quiz_attempts.id.
+        $attemptid = (int)$event->objectid;
+        $userid    = (int)$event->userid;
+        $courseid  = (int)$event->courseid;
 
-        // Get all question usages from this attempt.
-        $slots = $DB->get_records('quiz_attempts', ['id' => $attemptid], '', 'uniqueid');
-        if (!$slots) {
+        if ($attemptid <= 0 || $userid <= 0 || $courseid <= 0) {
             return;
         }
 
-        $usageid = reset($slots)->uniqueid;
-
-        // From question_usage_steps, get question ids used in this attempt.
-        $stepqs = $DB->get_records('question_attempts', ['questionusageid' => $usageid], '', 'questionid, id');
-
-        foreach ($stepqs as $qa) {
-            $questionid = $qa->questionid;
-            self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'participation');
-        }
+        xp_engine::award_participation_xp($userid, $courseid, $attemptid);
     }
 
     /**
-     * Award XP for correctness after question_graded.
+     * Observer: \question\event\question_graded
+     *
+     * Award correctness XP after a question is graded.
+     *
+     * NOTE: Moodle event payloads can vary by question engine / context.
+     * This method tries several common keys and bails out safely if it can't.
+     *
+     * @param \question\event\question_graded $event
      */
-    public static function award_correct_xp(int $userid, int $courseid, int $questionid, int $attemptid, float $grade): void {
-        if ($grade <= 0) {
-            return; // No XP if incorrect.
-        }
+    public static function question_graded(\question\event\question_graded $event): void {
+        $userid   = (int)$event->userid;
+        $courseid = (int)$event->courseid;
 
-        self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'correct');
-    }
-
-    /**
-     * Internal helper for inserting XP ledger rows and updating daily summaries.
-     */
-    private static function apply_xp_for_event(int $userid, int $courseid, int $questionid, int $attemptid, string $type): void {
-        global $DB;
-
-        // Load XP config (source of truth).
-        $cfg = $DB->get_record('local_kiwilearner_question_xp', [
-            'questionid' => $questionid,
-            'courseid'   => $courseid,
-        ]);
-
-        if (!$cfg || !$cfg->enabled) {
-            return; // XP disabled for this question.
-        }
-
-        // Determine XP amount.
-        $xp = ($type === 'participation') ? $cfg->xp_participation : $cfg->xp_correct;
-        if ($xp == 0) {
+        if ($userid <= 0 || $courseid <= 0) {
             return;
         }
 
-        // Insert into XP event ledger.
-        $event = (object)[
-            'userid'      => $userid,
-            'courseid'    => $courseid,
-            'questionid'  => $questionid,
-            'attemptid'   => $attemptid,
-            'xpdelta'     => $xp,
-            'reason'      => "XP awarded for {$type}",
-            'createdby'   => null,
-            'timecreated' => time(),
-        ];
-        $DB->insert_record('local_kiwilearner_xp_event', $event);
-
-        // Update daily summary table.
-        self::update_daily_summary($userid, $courseid, $xp);
-    }
-
-    /**
-     * Update daily XP summary table.
-     */
-    private static function update_daily_summary(int $userid, int $courseid, int $xp): void {
-        global $DB;
-
-        $daystart = strtotime('today midnight');
-
-        $existing = $DB->get_record('local_kiwilearner_xp_summary_day', [
-            'userid'   => $userid,
-            'courseid' => $courseid,
-            'daystart' => $daystart,
-        ]);
-
-        if ($existing) {
-            $existing->xptotal += $xp;
-            $existing->timemodified = time();
-            $DB->update_record('local_kiwilearner_xp_summary_day', $existing);
+        // Try to resolve questionid.
+        $questionid = 0;
+        if (!empty($event->other['questionid'])) {
+            $questionid = (int)$event->other['questionid'];
+        } else if (!empty($event->other['question'])) {
+            $questionid = (int)$event->other['question'];
         } else {
-            $record = (object)[
-                'userid'       => $userid,
-                'courseid'     => $courseid,
-                'daystart'     => $daystart,
-                'xptotal'      => $xp,
-                'timecreated'  => time(),
-                'timemodified' => time(),
-            ];
-            $DB->insert_record('local_kiwilearner_xp_summary_day', $record);
+            // Some events use objectid, but that may also be a questionattempt id.
+            $questionid = (int)$event->objectid;
         }
+
+        // Try to resolve attemptid (quiz attempt id).
+        $attemptid = 0;
+        foreach (['attemptid', 'quizattemptid', 'quizattemptid'] as $k) {
+            if (!empty($event->other[$k])) {
+                $attemptid = (int)$event->other[$k];
+                break;
+            }
+        }
+
+        // Grade/fraction: commonly available as "fraction" or "grade" in other[].
+        $grade = null;
+        foreach (['fraction', 'grade', 'mark'] as $k) {
+            if (isset($event->other[$k])) {
+                $grade = (float)$event->other[$k];
+                break;
+            }
+        }
+
+        if ($questionid <= 0 || $attemptid <= 0 || $grade === null) {
+            // If you want to debug: temporarily add debugging() / error_log here.
+            return;
+        }
+
+        xp_engine::award_correct_xp($userid, $courseid, $questionid, $attemptid, (float)$grade);
     }
+
 }

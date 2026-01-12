@@ -3,6 +3,16 @@ namespace local_kiwilearner\utils;
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * XP engine (business logic).
+ *
+ * Responsibilities:
+ *  - load XP config
+ *  - enforce idempotency (prevent double-awards)
+ *  - write ledger (local_kiwilearner_xp_event)
+ *  - maintain daily summary (local_kiwilearner_xp_summary_day)
+ *  - H5P IV once/day awarding
+ */
 class xp_engine {
 
     /**
@@ -55,7 +65,7 @@ class xp_engine {
 
     /**
      * Award XP for correctness after question_graded.
-     * $grade is 0..1 (fraction).
+     * $grade is usually 0..1 (fraction).
      */
     public static function award_correct_xp(int $userid, int $courseid, int $questionid, int $attemptid, float $grade): void {
         if ($userid <= 0 || $courseid <= 0 || $questionid <= 0 || $attemptid <= 0) {
@@ -73,7 +83,7 @@ class xp_engine {
      *
      * Idempotency:
      * Prevent double-awards by checking if we already wrote an xp_event row for
-     * (userid, courseid, questionid, attemptid, type).
+     * (userid, courseid, questionid, attemptid, reason).
      *
      * NOTE: This idempotency uses "reason" as the type marker (no schema changes required).
      */
@@ -108,10 +118,10 @@ class xp_engine {
             return;
         }
 
-        $t = time();
+        $now = time();
 
         // Write ledger row.
-        $event = (object)[
+        $DB->insert_record('local_kiwilearner_xp_event', (object)[
             'userid'      => $userid,
             'courseid'    => $courseid,
             'questionid'  => $questionid,
@@ -119,12 +129,67 @@ class xp_engine {
             'xpdelta'     => $xp,
             'reason'      => $reason,
             'createdby'   => null,
-            'timecreated' => $t,
-        ];
-        $DB->insert_record('local_kiwilearner_xp_event', $event);
+            'timecreated' => $now,
+        ]);
 
         // Update daily summary.
-        self::update_daily_summary($userid, $courseid, $xp, $t);
+        self::update_daily_summary($userid, $courseid, $xp, $now);
+    }
+
+    /**
+     * Award XP for a correct H5P Interactive Video interaction once per day.
+     *
+     * We store the H5P "question id" (subContentId) inside reason:
+     *   h5piv_correct:<subcontentid>
+     *
+     * @return bool true if awarded, false if already awarded today
+     */
+    public static function award_h5p_correct_once_per_day(
+        int $userid,
+        int $courseid,
+        string $subcontentid,
+        int $xpdelta = 1
+    ): bool {
+        global $DB;
+
+        $subcontentid = trim($subcontentid);
+        if ($userid <= 0 || $courseid <= 0 || $subcontentid === '' || $xpdelta === 0) {
+            return false;
+        }
+
+        $now = time();
+        $daystart = usergetmidnight($now);
+        $dayend   = $daystart + DAYSECS;
+
+        $reason = 'h5piv_correct:' . $subcontentid;
+
+        // Enforce once/day per user per interaction.
+        $exists = $DB->record_exists_select(
+            'local_kiwilearner_xp_event',
+            'userid = ? AND courseid = ? AND reason = ? AND timecreated >= ? AND timecreated < ?',
+            [$userid, $courseid, $reason, $daystart, $dayend]
+        );
+
+        if ($exists) {
+            return false;
+        }
+
+        // Insert ledger.
+        $DB->insert_record('local_kiwilearner_xp_event', (object)[
+            'userid'      => $userid,
+            'courseid'    => $courseid,
+            'questionid'  => null, // H5P interaction is not Moodle question.id
+            'attemptid'   => null,
+            'xpdelta'     => $xpdelta,
+            'reason'      => $reason,
+            'createdby'   => null,
+            'timecreated' => $now,
+        ]);
+
+        // Update daily summary (same-day bucket).
+        self::update_daily_summary($userid, $courseid, $xpdelta, $now);
+
+        return true;
     }
 
     /**
@@ -134,7 +199,6 @@ class xp_engine {
     private static function update_daily_summary(int $userid, int $courseid, int $xp, int $now): void {
         global $DB;
 
-        // Moodle helper: midnight in user's timezone.
         $daystart = usergetmidnight($now);
 
         $existing = $DB->get_record('local_kiwilearner_xp_summary_day', [
@@ -148,15 +212,14 @@ class xp_engine {
             $existing->timemodified = $now;
             $DB->update_record('local_kiwilearner_xp_summary_day', $existing);
         } else {
-            $record = (object)[
+            $DB->insert_record('local_kiwilearner_xp_summary_day', (object)[
                 'userid'       => $userid,
                 'courseid'     => $courseid,
                 'daystart'     => $daystart,
                 'xptotal'      => (int)$xp,
                 'timecreated'  => $now,
                 'timemodified' => $now,
-            ];
-            $DB->insert_record('local_kiwilearner_xp_summary_day', $record);
+            ]);
         }
     }
 }
