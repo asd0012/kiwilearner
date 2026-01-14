@@ -41,3 +41,58 @@ function local_kiwilearner_extend_navigation_course(
     $navigation->add_node($node);
 }
 
+function local_kiwilearner_update_goal_streak(int $userid, int $courseid, int $daystart, int $now = 0): void {
+    global $DB;
+
+    $now = $now ?: time();
+
+    $goal = $DB->get_record('local_kiwilearner_goal', [
+        'userid' => $userid,
+        'courseid' => $courseid,
+    ], '*', IGNORE_MISSING);
+
+    if (!$goal) {
+        return;
+    }
+
+    $target = (int)($goal->xp_target ?? 0);
+    if ($target <= 0) {
+        return;
+    }
+
+    $summary = $DB->get_record('local_kiwilearner_xp_summary_day', [
+        'userid' => $userid,
+        'courseid' => $courseid,
+        'daystart' => $daystart,
+    ], '*', IGNORE_MISSING);
+
+    $xptotal = (int)($summary->xptotal ?? 0);
+    $met = ($xptotal >= $target);
+
+    // Already processed today => idempotent.
+    if ((int)($goal->laststreakdaystart ?? 0) === (int)$daystart) {
+        return;
+    }
+
+    if (!$met) {
+        $goal->currentstreak = 0;
+        $goal->timemodified = $now;
+        $DB->update_record('local_kiwilearner_goal', $goal);
+        return;
+    }
+
+    // DST-safe previous daystart.
+    $prevdaystart = usergetmidnight($daystart - 1);
+
+    if ((int)($goal->laststreakdaystart ?? 0) === (int)$prevdaystart) {
+        $goal->currentstreak = (int)($goal->currentstreak ?? 0) + 1;
+    } else {
+        $goal->currentstreak = 1;
+    }
+
+    $goal->beststreak = max((int)($goal->beststreak ?? 0), (int)$goal->currentstreak);
+    $goal->laststreakdaystart = $daystart;
+    $goal->timemodified = $now;
+
+    $DB->update_record('local_kiwilearner_goal', $goal);
+}

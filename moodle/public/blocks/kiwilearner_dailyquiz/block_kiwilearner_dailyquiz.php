@@ -3,6 +3,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->dirroot . '/local/kiwilearner/lib.php'); // <- make sure function exists here
 use local_kiwilearner\utils\xp_sync_helper;
 
 class block_kiwilearner_dailyquiz extends block_base
@@ -41,6 +42,7 @@ class block_kiwilearner_dailyquiz extends block_base
 		block_kiwilearner_dailyquiz_sync_xp_to_local($USER->id, $courseid, $daykey);
 
 		$daystart = (int)usergetmidnight(time());  // Moodle midnight timestamp in user TZ
+		local_kiwilearner_update_goal_streak($USER->id, $courseid, $daystart);
 		$todayxp = block_kiwilearner_dailyquiz_get_today_xptotal($USER->id, $courseid, $daystart);
 		$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
 
@@ -238,6 +240,13 @@ class block_kiwilearner_dailyquiz extends block_base
 				[$alldayitems, $ignoredCorrect] = $build_items($allquestions);  // <-- don't store into $todayxp
 				$todaycount = count($alldayitems);
 
+				$goal = $DB->get_record('local_kiwilearner_goal', [
+					'userid' => $USER->id,
+					'courseid' => $courseid,
+				], 'currentstreak,beststreak,laststreakdaystart', IGNORE_MISSING);
+
+				$currentstreak = $goal ? (int)$goal->currentstreak : 0;
+				$beststreak    = $goal ? (int)$goal->beststreak : 0;
 				// build INLINE summary (for course page right after submit)
 				// [$inlineitems, $attemptcorrect] = $build_items($attemptquestions);
 
@@ -250,6 +259,9 @@ class block_kiwilearner_dailyquiz extends block_base
 					'daykey'         => $daykey,
 					'items'          => $alldayitems,
 					'hasitems'       => ($todaytotal > 0),
+
+					'canreattempt' => $canreattempt,
+					'reattempturl' => $reattempturl,
 				];
 
 				// render only THIS SUBMIT items, but keep XP as TODAY
@@ -287,6 +299,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				#$inlinesummary['sesskey']  = sesskey();
 				#$inlinesummary['emailsummaryurl'] = (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false);
 
+
 				$inlinesummary = [
 					'quizname'      => $quizname,
 					'xp_earned'     => $todayxp,
@@ -305,6 +318,9 @@ class block_kiwilearner_dailyquiz extends block_base
 					'courseid'       => (int)$courseid,
 					'sesskey'        => sesskey(),
 					'emailsummaryurl' => (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false),
+
+					'currentstreak' => $currentstreak,
+					'beststreak'    => $beststreak,
 				];
 
 
@@ -364,6 +380,9 @@ class block_kiwilearner_dailyquiz extends block_base
 					// ✅ ADD THESE
 					'canreattempt' => $canreattempt,
 					'reattempturl' => $reattempturl,
+
+					'currentstreak' => $currentstreak,
+					'beststreak'    => $beststreak,
 				];
 
 				$this->content->text .= $OUTPUT->render_from_template('block_kiwilearner_dailyquiz/attempt_quiz', $dataresult);

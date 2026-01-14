@@ -14,6 +14,8 @@ $PAGE->set_heading('Daily Quiz Summary');
 
 require_once(__DIR__ . '/lib.php');
 
+// --- Streak update (only meaningful for "today") ---
+require_once($CFG->dirroot . '/local/kiwilearner/lib.php'); // <- make sure function exists here
 global $DB, $USER;
 
 $dayparam = optional_param('day', '', PARAM_ALPHANUM);
@@ -22,6 +24,20 @@ if ($dayparam !== '' && preg_match('/^\d{8}$/', $dayparam)) {
     $daykey = $dayparam; // only accept correct 8-digit format
 } else {
     $daykey = block_kiwilearner_dailyquiz_daykey();
+}
+
+
+$todaykey = block_kiwilearner_dailyquiz_daykey();
+$now = time();
+$daystart = usergetmidnight($now); // user-TZ midnight epoch
+
+// Only update streak when viewing "today", otherwise you risk backfilling + messing current streak.
+if ($daykey === $todaykey) {
+    // Keep local xp tables synced before streak calc (so xptotal is fresh).
+    block_kiwilearner_dailyquiz_sync_xp_to_local($USER->id, $courseid, $daykey, $now);
+
+    // Update goal streak fields in local_kiwilearner_goal.
+    local_kiwilearner_update_goal_streak($USER->id, $courseid, $daystart, $now);
 }
 
 
@@ -129,10 +145,23 @@ foreach ($rows as $qid => $r) {
     ];
 }
 
-$daykey = block_kiwilearner_dailyquiz_daykey();
-
 // ✅ source of truth for totals (same as course homepage)
 [$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+
+$daystart = usergetmidnight(time());
+
+$todaykey = block_kiwilearner_dailyquiz_daykey();
+if ($daykey === $todaykey) {
+    local_kiwilearner_update_goal_streak($USER->id, $courseid, $daystart);
+}
+
+$goal = $DB->get_record('local_kiwilearner_goal', [
+    'userid' => $USER->id,
+    'courseid' => $courseid,
+], 'currentstreak,beststreak,laststreakdaystart', IGNORE_MISSING);
+
+$currentstreak = $goal ? (int)$goal->currentstreak : 0;
+$beststreak    = $goal ? (int)$goal->beststreak : 0;
 
 $savedsummary = [
   'daykey'       => $daykey,
@@ -142,6 +171,8 @@ $savedsummary = [
   'hasitems'     => !empty($items),
   'items'        => $items,
   'isunknown'    => false,
+  'currentstreak' => $currentstreak,
+  'beststreak'    => $beststreak,
 ];
 
 $data = (object)[
