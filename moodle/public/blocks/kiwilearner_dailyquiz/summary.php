@@ -1,4 +1,7 @@
 <?php
+
+use aiprovider_openai\aimodel\o1;
+
 require_once(__DIR__ . '/../../config.php');
 
 $courseid = required_param('id', PARAM_INT);
@@ -28,6 +31,24 @@ if ($dayparam !== '' && preg_match('/^\d{8}$/', $dayparam)) {
 
 
 $todaykey = block_kiwilearner_dailyquiz_daykey();
+
+
+// //************ */ DEV ONLY: time-travel testing via ?dayoffset=1 (tomorrow), -1 (yesterday) **********
+
+// $dayoffset = optional_param('dayoffset', 0, PARAM_INT);
+// if (!debugging('', DEBUG_DEVELOPER)) {
+//     $dayoffset = 0;
+// }
+// $dayoffset = max(-7, min(7, $dayoffset));
+
+// $now = time() + ($dayoffset * DAYSECS);
+// $daystart = usergetmidnight($now);
+
+// // Recompute daykey based on the shifted day (match your storage format)
+// $daykey = date('Ymd', $daystart);
+// $todaykey = date('Ymd', usergetmidnight(time()));
+
+
 $now = time();
 $daystart = usergetmidnight($now); // user-TZ midnight epoch
 
@@ -41,7 +62,7 @@ if ($daykey === $todaykey) {
 }
 
 
-$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
+// $xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 0);
 
 // --- Handle "Email me this summary" POST (must run before any output) ---
 $doemail = optional_param('emailsummary', 0, PARAM_BOOL);
@@ -155,25 +176,83 @@ if ($daykey === $todaykey) {
     local_kiwilearner_update_goal_streak($USER->id, $courseid, $daystart);
 }
 
+
+
 $goal = $DB->get_record('local_kiwilearner_goal', [
     'userid' => $USER->id,
     'courseid' => $courseid,
-], 'currentstreak,beststreak,laststreakdaystart', IGNORE_MISSING);
+], 'xp_target,currentstreak,beststreak,laststreakdaystart', IGNORE_MISSING);
+
+$xptarget = $goal ? (int)$goal->xp_target : 0;
 
 $currentstreak = $goal ? (int)$goal->currentstreak : 0;
 $beststreak    = $goal ? (int)$goal->beststreak : 0;
 
+// Goal status + daily message (always show something to reduce emptiness).
+$savedsummary['goalstatus_label'] = get_string('goalstatus_unknown', 'block_kiwilearner_dailyquiz');
+$savedsummary['is_goal_achieved'] = false;
+$savedsummary['is_goal_missed']   = false;
+$savedsummary['is_goal_unknown']  = false;
+$savedsummary['goal_daily_msg']   = '';
+
+
 $savedsummary = [
-  'daykey'       => $daykey,
-  'xp_earned'    => $todayxp,       // <= use totals
-  'xp_target'    => $xptarget,
-  'questioncount'=> $todaytotal,    // <= use totals
-  'hasitems'     => !empty($items),
-  'items'        => $items,
-  'isunknown'    => false,
-  'currentstreak' => $currentstreak,
-  'beststreak'    => $beststreak,
+    'daykey'       => $daykey,
+    'xp_earned'    => $todayxp,       // <= use totals
+    'xp_target'    => $xptarget,
+    'questioncount' => $todaytotal,    // <= use totals
+    'hasitems'     => !empty($items),
+    'items'        => $items,
+    'isunknown'    => false,
+    'currentstreak' => $currentstreak,
+    'beststreak'    => $beststreak,
+
+    // goal UI fields (default)
+    'goalstatus_label' => '',
+    'is_goal_achieved' => false,
+    'is_goal_missed'   => false,
+    'is_goal_unknown'  => false,
+    'goal_daily_msg'   => '',
 ];
+
+
+if (empty($xptarget) || (int)$xptarget <= 0) {
+    $savedsummary['goalstatus_label'] = get_string('goalstatus_unknown', 'block_kiwilearner_dailyquiz');
+    $savedsummary['is_goal_unknown']  = true;
+    $savedsummary['goal_daily_msg']   = get_string('goal_daily_unknown_msg', 'block_kiwilearner_dailyquiz');
+} else if ((int)$todayxp >= (int)$xptarget) {
+    $savedsummary['goalstatus_label'] = get_string('goalstatus_achieved', 'block_kiwilearner_dailyquiz');
+    $savedsummary['is_goal_achieved'] = true;
+
+    $a = (object)[
+        'target' => (int)$xptarget,
+        'streak' => (int)$currentstreak,
+    ];
+    $savedsummary['goal_daily_msg'] = get_string('goal_daily_hit_msg', 'block_kiwilearner_dailyquiz', $a);
+} else {
+    $savedsummary['goalstatus_label'] = get_string('goalstatus_missed', 'block_kiwilearner_dailyquiz');
+    $savedsummary['is_goal_missed']   = true;
+
+    $a = (object)[
+        'remain' => max(0, (int)$xptarget - (int)$todayxp),
+        'target' => (int)$xptarget,
+    ];
+    $savedsummary['goal_daily_msg'] = get_string('goal_daily_miss_msg', 'block_kiwilearner_dailyquiz', $a);
+}
+
+$streak = (int)($goal->currentstreak ?? 0);
+
+$milestones = [
+    5  => 'streak_milestone_5',
+    10 => 'streak_milestone_10',
+    15 => 'streak_milestone_15',
+    20 => 'streak_milestone_20',
+];
+
+$savedsummary['streak_milestone_msg'] = '';
+if (isset($milestones[$streak])) {
+    $savedsummary['streak_milestone_msg'] = get_string($milestones[$streak], 'block_kiwilearner_dailyquiz');
+}
 
 $data = (object)[
     'quizname'    => get_string('pluginname', 'block_kiwilearner_dailyquiz'),

@@ -82,13 +82,14 @@ function local_kiwilearner_update_goal_streak(int $userid, int $courseid, int $d
     }
 
     // DST-safe previous daystart.
-    $prevdaystart = usergetmidnight($daystart - 1);
+    $prevdaystart = (int)$daystart - DAYSECS;
 
     if ((int)($goal->laststreakdaystart ?? 0) === (int)$prevdaystart) {
         $goal->currentstreak = (int)($goal->currentstreak ?? 0) + 1;
     } else {
         $goal->currentstreak = 1;
     }
+
 
     $goal->beststreak = max((int)($goal->beststreak ?? 0), (int)$goal->currentstreak);
     $goal->laststreakdaystart = $daystart;

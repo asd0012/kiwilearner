@@ -44,7 +44,7 @@ class block_kiwilearner_dailyquiz extends block_base
 		$daystart = (int)usergetmidnight(time());  // Moodle midnight timestamp in user TZ
 		local_kiwilearner_update_goal_streak($USER->id, $courseid, $daystart);
 		$todayxp = block_kiwilearner_dailyquiz_get_today_xptotal($USER->id, $courseid, $daystart);
-		$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
+		$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 0);
 
 		$data['todayxp'] = $todayxp;
 		$data['xp_target'] = $xptarget;
@@ -159,7 +159,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				$daystart = (int)usergetmidnight(time());  // Moodle midnight timestamp in user TZ
 				$todayxp = block_kiwilearner_dailyquiz_get_today_xptotal($USER->id, $courseid, $daystart);
 
-				$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
+				$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 0);
 
 				$data['todayxp'] = $todayxp;
 				$data['xp_target'] = $xptarget;
@@ -248,7 +248,7 @@ class block_kiwilearner_dailyquiz extends block_base
 				$currentstreak = $goal ? (int)$goal->currentstreak : 0;
 				$beststreak    = $goal ? (int)$goal->beststreak : 0;
 				// build INLINE summary (for course page right after submit)
-				// [$inlineitems, $attemptcorrect] = $build_items($attemptquestions);
+				// [$inlineitems, $attemptcorrect] = $build_items($attemptquetions);
 
 				// store FULL DAY in preferences (so summary page can show everything)
 				$summarydata = [
@@ -302,7 +302,22 @@ class block_kiwilearner_dailyquiz extends block_base
 				#$inlinesummary['sesskey']  = sesskey();
 				#$inlinesummary['emailsummaryurl'] = (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false);
 
+				$goalstatuslabel = get_string('goalstatus_unknown', 'block_kiwilearner_dailyquiz');
+				$is_goal_unknown = true;
+				$is_goal_achieved = false;
+				$is_goal_missed = false;
 
+				if ((int)$xptarget > 0) {
+					$is_goal_unknown = false;
+
+					if ((int)$todayxp >= (int)$xptarget) {
+						$goalstatuslabel = get_string('goalstatus_achieved', 'block_kiwilearner_dailyquiz');
+						$is_goal_achieved = true;
+					} else {
+						$goalstatuslabel = get_string('goalstatus_missed', 'block_kiwilearner_dailyquiz');
+						$is_goal_missed = true;
+					}
+				}
 				$inlinesummary = [
 					'quizname'      => $quizname,
 					'xp_earned'     => $todayxp,
@@ -324,6 +339,11 @@ class block_kiwilearner_dailyquiz extends block_base
 
 					'currentstreak' => $currentstreak,
 					'beststreak'    => $beststreak,
+
+					'goalstatus_label' => $goalstatuslabel,
+					'is_goal_unknown' => $is_goal_unknown,
+					'is_goal_achieved' => $is_goal_achieved,
+					'is_goal_missed' => $is_goal_missed,
 				];
 
 
