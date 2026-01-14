@@ -179,5 +179,57 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2025122101, 'local', 'kiwilearner');
     }
 
+    // 2026-01-12 01: Add streak fields to goal table.
+    if ($oldversion < 2026011201) {
+        $table = new xmldb_table('local_kiwilearner_goal');
+
+        // currentstreak
+        $field = new xmldb_field(
+            'currentstreak',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            0,
+            'timemodified' // place after timemodified
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // beststreak
+        $field = new xmldb_field(
+            'beststreak',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            0,
+            'currentstreak' // place after currentstreak
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // laststreakdaystart (stores today's midnight timestamp when streak was last updated)
+        $field = new xmldb_field(
+            'laststreakdaystart',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            0,
+            'beststreak' // place after beststreak
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026011201, 'local', 'kiwilearner');
+    }
+
     return true;
 }

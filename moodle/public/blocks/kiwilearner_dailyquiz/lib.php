@@ -1,4 +1,8 @@
 <?php
+
+use local_kiwilearner\utils\xp_engine;
+use local_kiwilearner\utils\xp_sync_helper;
+
 defined('MOODLE_INTERNAL') || die();
 
 function shuffle_assoc($list)
@@ -13,13 +17,15 @@ function shuffle_assoc($list)
     return $random;
 }
 
-function block_kiwilearner_dailyquiz_daykey(int $t = null): string {
+function block_kiwilearner_dailyquiz_daykey(int $t = null): string
+{
     $t = $t ?? time();
     $p = usergetdate($t); // user timezone
     return sprintf('%04d%02d%02d', $p['year'], $p['mon'], $p['mday']);
 }
 
-function block_kiwilearner_dailyquiz_get_xp_target(int $userid, int $courseid, int $default = 10): int {
+function block_kiwilearner_dailyquiz_get_xp_target(int $userid, int $courseid, int $default = 10): int
+{
     global $DB;
 
     $goal = $DB->get_field('local_kiwilearner_goal', 'xp_target', [
@@ -230,7 +236,19 @@ function block_kiwilearner_dailyquiz_get_mcq_questions($courseid, $topics = [], 
     return $quizquestions;
 }
 
-function block_kiwilearner_dailyquiz_get_today_totals_from_temp(int $userid, int $courseid, string $daykey): array {
+function block_kiwilearner_dailyquiz_get_today_xptotal(int $userid, int $courseid, int $daystart): int {
+    global $DB;
+    $xptotal = $DB->get_field('local_kiwilearner_xp_summary_day', 'xptotal', [
+        'userid' => $userid,
+        'courseid' => $courseid,
+        'daystart' => $daystart,
+    ], IGNORE_MISSING);
+
+    return (int)($xptotal ?? 0);
+}
+
+function block_kiwilearner_dailyquiz_get_today_totals_from_temp(int $userid, int $courseid, string $daykey): array
+{
     global $DB;
 
     $sql = "SELECT questionid, MAX(score) AS bestscore
@@ -259,18 +277,90 @@ function block_kiwilearner_dailyquiz_get_today_totals_from_temp(int $userid, int
     return [$xp, $total];
 }
 
-
-function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, array $answers): void {
+function block_kiwilearner_dailyquiz_award_dailyquiz_xp(
+    int $userid,
+    int $courseid,
+    int $daykey,
+    int $questionid,
+    float $score
+): void {
     global $DB;
 
-    $daykey = block_kiwilearner_dailyquiz_daykey();
+    if ($userid <= 0 || $courseid <= 0 || $questionid <= 0) {
+        return;
+    }
+    if ($score <= 0) {
+        return;
+    }
 
+    $now = time();
+
+    // ✅ epoch midnight (user timezone)
+    $daystart  = usergetmidnight($now);
+    $attemptid = $daystart;
+
+    $reason = 'kiwilearner:dailyquiz_correct';
+
+    // ✅ insert XP event, rely on UNIQUE index to dedupe (race-safe)
+    try {
+        $DB->insert_record('local_kiwilearner_xp_event', (object)[
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'questionid' => $questionid,
+            'attemptid' => $attemptid,
+            'xpdelta' => 1,
+            'reason' => $reason,
+            'timecreated' => $now,
+        ]);
+    } catch (\dml_write_exception $e) {
+        // duplicate → ignore
+        return;
+    }
+
+    // // 2) Upsert summary day (+1)
+    // $summary = $DB->get_record('local_kiwilearner_xp_summary_day', [
+    //     'userid' => $userid,
+    //     'courseid' => $courseid,
+    //     'daystart' => $daystart,
+    // ], '*', IGNORE_MISSING);
+
+    // if ($summary) {
+    //     $summary->xptotal = (int)$summary->xptotal + 1;
+    //     $summary->timemodified = $now;
+    //     $DB->update_record('local_kiwilearner_xp_summary_day', $summary);
+    // } else {
+    //     $DB->insert_record('local_kiwilearner_xp_summary_day', (object)[
+    //         'userid' => $userid,
+    //         'courseid' => $courseid,
+    //         'daystart' => $daystart,
+    //         'xptotal' => 1,
+    //         'timecreated' => $now,
+    //         'timemodified' => $now,
+    //     ]);
+    // }
+}
+
+function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, array $answers): void
+{
+    global $DB;
+
+    // $daykey = block_kiwilearner_dailyquiz_daykey();
+    $now = time();
+    $daystart = usergetmidnight($now);                 
+    $daykey = userdate($daystart, '%Y%m%d');           
+    
     foreach ($answers as $questionid => $answerid) {
         $questionid = (int)$questionid;
         $answerid   = is_numeric($answerid) ? (int)$answerid : 0;
 
         if ($questionid <= 0) {
             continue;
+        }
+
+        // ✅ Sync question XP config from customfields -> local table (once per submit per question).
+        $xp = \local_kiwilearner\utils\xp_sync_helper::get_xp_from_customfields($questionid);
+        if (!empty($xp)) {
+            \local_kiwilearner\utils\xp_sync_helper::upsert_question_xp($questionid, $courseid, $xp);
         }
 
         // Compute score from selected answer's fraction.
@@ -281,6 +371,9 @@ function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, 
                 $score = (float)$ans->fraction; // usually 1.0 for correct, 0.0 for wrong
             }
         }
+
+        block_kiwilearner_dailyquiz_award_dailyquiz_xp($userid, $courseid, $daykey, $questionid, $score);
+
 
         // One row per (userid, courseid, daykey, questionid).
         $existing = $DB->get_record('block_kiwilearner_dailyquiz_temp', [
@@ -308,16 +401,86 @@ function block_kiwilearner_dailyquiz_submit_attempt(int $userid, int $courseid, 
                 'questionid' => $questionid,
                 'answer'     => $answerid,
                 'score'      => $score,
-                'timecreated'=> time(),
+                'timecreated' => time(),
             ]);
         }
+    }
+    block_kiwilearner_dailyquiz_sync_xp_to_local($userid, $courseid, $daykey, $now);
+}
+
+
+function block_kiwilearner_dailyquiz_sync_xp_to_local(int $userid, int $courseid, string $daykey, int $now = 0): void {
+    global $DB;
+
+    $now = $now ?: time();
+    $daystart  = usergetmidnight($now);   // always unix midnight
+    $attemptid = $daystart;
+    $reason    = 'kiwilearner:dailyquiz_correct';
+
+    $sql = "SELECT questionid, MAX(score) AS bestscore
+              FROM {block_kiwilearner_dailyquiz_temp}
+             WHERE userid = :userid AND courseid = :courseid AND daykey = :daykey
+          GROUP BY questionid";
+    $rows = $DB->get_records_sql($sql, [
+        'userid' => $userid,
+        'courseid' => $courseid,
+        'daykey' => $daykey,
+    ]);
+
+    $todayxp = 0;
+
+    foreach ($rows as $r) {
+        if ((float)$r->bestscore <= 0) {
+            continue;
+        }
+        $todayxp++;
+
+        $event = (object)[
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'questionid' => (int)$r->questionid,
+            'attemptid' => $attemptid,
+            'xpdelta' => 1,
+            'reason' => $reason,
+            'timecreated' => $now,
+        ];
+
+        // relies on UNIQUE index to stop duplicates (race-safe)
+        try {
+            $DB->insert_record('local_kiwilearner_xp_event', $event);
+        } catch (\dml_write_exception $e) {
+            // ignore duplicates
+        }
+    }
+
+    // summary: keep your "never decrease" rule
+    $summary = $DB->get_record('local_kiwilearner_xp_summary_day', [
+        'userid' => $userid,
+        'courseid' => $courseid,
+        'daystart' => $daystart,
+    ], '*', IGNORE_MISSING);
+
+    if ($summary) {
+        if ((int)$summary->xptotal < $todayxp) {
+            $summary->xptotal = $todayxp;
+            $summary->timemodified = $now;
+            $DB->update_record('local_kiwilearner_xp_summary_day', $summary);
+        }
+    } else {
+        $DB->insert_record('local_kiwilearner_xp_summary_day', (object)[
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'daystart' => $daystart,
+            'xptotal' => $todayxp,
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
     }
 }
 
 
-
-
-function block_kiwilearner_dailyquiz_get_results(int $userid, int $courseid, ?string $daykey = null): array {
+function block_kiwilearner_dailyquiz_get_results(int $userid, int $courseid, ?string $daykey = null): array
+{
     global $DB;
 
     $daykey = $daykey ?? block_kiwilearner_dailyquiz_daykey();
@@ -337,7 +500,8 @@ function block_kiwilearner_dailyquiz_get_results(int $userid, int $courseid, ?st
 }
 
 if (!function_exists('block_kiwilearner_dailyquiz_normalize_answer')) {
-    function block_kiwilearner_dailyquiz_normalize_answer($s): string {
+    function block_kiwilearner_dailyquiz_normalize_answer($s): string
+    {
         $s = html_entity_decode((string)$s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $s = strip_tags($s);
         $s = preg_replace("/\s+/u", " ", trim($s));
@@ -346,7 +510,8 @@ if (!function_exists('block_kiwilearner_dailyquiz_normalize_answer')) {
 }
 
 if (!function_exists('block_kiwilearner_dailyquiz_is_correct')) {
-    function block_kiwilearner_dailyquiz_is_correct($your, $correct, $yourid = null, $correctid = null): bool {
+    function block_kiwilearner_dailyquiz_is_correct($your, $correct, $yourid = null, $correctid = null): bool
+    {
         // Best case: compare IDs.
         if ($yourid !== null && $correctid !== null) {
             return ((int)$yourid > 0) && ((int)$yourid === (int)$correctid);

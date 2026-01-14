@@ -3,6 +3,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir . '/formslib.php');
+use local_kiwilearner\utils\xp_sync_helper;
 
 class block_kiwilearner_dailyquiz extends block_base
 {
@@ -35,9 +36,15 @@ class block_kiwilearner_dailyquiz extends block_base
 
 		$daykey = block_kiwilearner_dailyquiz_daykey();
 		$prefkey = 'block_kiwilearner_dailyquiz_summary_' . $courseid;
-		[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+		[, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+
+		block_kiwilearner_dailyquiz_sync_xp_to_local($USER->id, $courseid, $daykey);
+
+		$daystart = (int)usergetmidnight(time());  // Moodle midnight timestamp in user TZ
+		$todayxp = block_kiwilearner_dailyquiz_get_today_xptotal($USER->id, $courseid, $daystart);
 		$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
 
+		$data['todayxp'] = $todayxp;
 		$data['xp_target'] = $xptarget;
 
 		if (!empty($data['summary']) && is_array($data['summary'])) {
@@ -144,10 +151,15 @@ class block_kiwilearner_dailyquiz extends block_base
 
 				block_kiwilearner_dailyquiz_submit_attempt($USER->id,  $courseid, $answers);
 				$daykey = block_kiwilearner_dailyquiz_daykey();
-				[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+				[, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+
+				block_kiwilearner_dailyquiz_sync_xp_to_local($USER->id, $courseid, $daykey);
+				$daystart = (int)usergetmidnight(time());  // Moodle midnight timestamp in user TZ
+				$todayxp = block_kiwilearner_dailyquiz_get_today_xptotal($USER->id, $courseid, $daystart);
 
 				$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 10);
 
+				$data['todayxp'] = $todayxp;
 				$data['xp_target'] = $xptarget;
 
 				if (!empty($data['summary']) && is_array($data['summary'])) {
@@ -316,6 +328,7 @@ class block_kiwilearner_dailyquiz extends block_base
 
 				// If you need daykey:
 				$daykey = block_kiwilearner_dailyquiz_daykey();
+				$daystart = (int)usergetmidnight(time());  // Moodle midnight timestamp in user TZ
 
 				// Build attempt items (however you build it)
 				$attemptitems = block_kiwilearner_dailyquiz_build_attempt_items($USER->id, $courseid, $daykey, $attemptqids);
