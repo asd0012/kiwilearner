@@ -262,6 +262,9 @@ class block_kiwilearner_dailyquiz extends block_base
 
 					'canreattempt' => $canreattempt,
 					'reattempturl' => $reattempturl,
+
+					'currentstreak' => $currentstreak,
+					'beststreak'    => $beststreak,
 				];
 
 				// render only THIS SUBMIT items, but keep XP as TODAY
