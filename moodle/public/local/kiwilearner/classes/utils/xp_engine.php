@@ -41,11 +41,6 @@ class xp_engine {
             return;
         }
 
-        // Only award when finished.
-        if (empty($attempt->timefinish) || $attempt->state !== 'finished') {
-            error_log("Attempt not finished, cancel awarding.");
-            return;
-        }
 
         $usageid = (int)$attempt->uniqueid;
         error_log("Get usage id:{$usageid}");
