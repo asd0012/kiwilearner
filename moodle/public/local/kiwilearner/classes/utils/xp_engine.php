@@ -35,9 +35,7 @@ class xp_engine {
         if ((int)$attempt->userid !== $userid) {
             return;
         }
-        if ((int)$attempt->course !== $courseid) {
-            return;
-        }
+
         // Only award when finished.
         if (empty($attempt->timefinish) || $attempt->state !== 'finished') {
             return;
