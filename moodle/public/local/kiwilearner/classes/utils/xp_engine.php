@@ -56,14 +56,14 @@ class xp_engine {
         }
         error_log("Get question attempts:". json_encode($qas));
 
-
         foreach ($qas as $qa) {
             $questionid = (int)$qa->questionid;
             if ($questionid <= 0) {
                 continue;
             }
             error_log("Call apply_xp_for_event by question attempt:". json_encode($qa));
-            self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'participation');
+            $reason = 'quiz_question:' . $questionid;
+            self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'quiz_participation', $reason, );
         }
     }
 
@@ -91,26 +91,61 @@ class xp_engine {
      *
      * NOTE: This idempotency uses "reason" as the type marker (no schema changes required).
      */
-    private static function apply_xp_for_event(int $userid, int $courseid, int $questionid, int $attemptid, string $type): void {
+    private static function apply_xp_for_event(
+        int $userid,
+        int $courseid,
+        ?int $questionid,
+        ?int $attemptid,
+        string $type,
+        ?string $reasonoverride = null,
+        ?int $xpoverride = null
+    ): bool {
         global $DB;
 
-        // Load XP config.
-        $cfg = $DB->get_record('local_kiwilearner_question_xp', [
-            'questionid' => $questionid,
-            'courseid'   => $courseid,
-        ], '*', IGNORE_MISSING);
-
-        if (!$cfg || empty($cfg->enabled)) {
-            return;
+        // Basic sanity.
+        if ($userid <= 0 || $courseid <= 0) {
+            error_log("[KIWI XP] apply_xp_for_event: invalid ids userid=$userid courseid=$courseid");
+            return false;
         }
 
-        $xp = ($type === 'participation') ? (int)$cfg->xp_participation : (int)$cfg->xp_correct;
-        if ($xp === 0) {
-            return;
+        $reason = $reasonoverride ?? ('kiwilearner:' . $type);
+
+        // Determine XP.
+        $xp = null;
+
+        if ($xpoverride !== null) {
+            $xp = (int)$xpoverride;
+        } else {
+            // For Moodle-question based awarding, config is required.
+            if (empty($questionid) || $questionid <= 0) {
+                error_log("[KIWI XP] apply_xp_for_event: missing questionid for type=$type reason=$reason");
+                return false;
+            }
+
+            $cfg = $DB->get_record('local_kiwilearner_question_xp', [
+                'questionid' => (int)$questionid,
+                'courseid'   => (int)$courseid,
+            ], '*', IGNORE_MISSING);
+
+            if (!$cfg) {
+                error_log("[KIWI XP] apply_xp_for_event: no config row questionid=$questionid courseid=$courseid");
+                return false;
+            }
+            if (empty($cfg->enabled)) {
+                error_log("[KIWI XP] apply_xp_for_event: config disabled questionid=$questionid courseid=$courseid");
+                return false;
+            }
+
+            $xp = ($type === 'participation') ? (int)$cfg->xp_participation : (int)$cfg->xp_correct;
+            error_log("[KIWI XP] apply_xp_for_event: get xp=$xp");
         }
 
-        // Idempotency guard (prevents double awarding).
-        $reason = 'kiwilearner:' . $type;
+        if ((int)$xp === 0) {
+            error_log("[KIWI XP] apply_xp_for_event: xp=0, skipping reason=$reason questionid=$questionid attemptid=$attemptid");
+            return false;
+        }
+
+        // Idempotency guard.
         $already = $DB->record_exists('local_kiwilearner_xp_event', [
             'userid'     => $userid,
             'courseid'   => $courseid,
@@ -118,8 +153,10 @@ class xp_engine {
             'attemptid'  => $attemptid,
             'reason'     => $reason,
         ]);
+
         if ($already) {
-            return;
+            error_log("[KIWI XP] apply_xp_for_event: already awarded reason=$reason questionid=$questionid attemptid=$attemptid");
+            return false;
         }
 
         $now = time();
@@ -130,15 +167,20 @@ class xp_engine {
             'courseid'    => $courseid,
             'questionid'  => $questionid,
             'attemptid'   => $attemptid,
-            'xpdelta'     => $xp,
+            'xpdelta'     => (int)$xp,
             'reason'      => $reason,
             'createdby'   => null,
             'timecreated' => $now,
         ]);
 
         // Update daily summary.
-        self::update_daily_summary($userid, $courseid, $xp, $now);
+        self::update_daily_summary($userid, $courseid, (int)$xp, $now);
+
+        error_log("[KIWI XP] apply_xp_for_event: INSERTED xp=$xp reason=$reason questionid=$questionid attemptid=$attemptid");
+
+        return true;
     }
+
 
     /**
      * Award XP for a correct H5P Interactive Video interaction once per day.
@@ -178,20 +220,15 @@ class xp_engine {
             return false;
         }
 
-        // Insert ledger.
-        $DB->insert_record('local_kiwilearner_xp_event', (object)[
-            'userid'      => $userid,
-            'courseid'    => $courseid,
-            'questionid'  => null, // H5P interaction is not Moodle question.id
-            'attemptid'   => null,
-            'xpdelta'     => $xpdelta,
-            'reason'      => $reason,
-            'createdby'   => null,
-            'timecreated' => $now,
-        ]);
-
-        // Update daily summary (same-day bucket).
-        self::update_daily_summary($userid, $courseid, $xpdelta, $now);
+        self::apply_xp_for_event(
+            $userid,
+            $courseid,
+            null,      // questionid
+            null,      // attemptid
+            'h5piv',   // type label (not used)
+            $reason,   // reasonoverride
+            $xpdelta   // xpoverride
+        );
 
         return true;
     }
