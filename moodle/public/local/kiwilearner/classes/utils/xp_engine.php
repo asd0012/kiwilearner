@@ -26,7 +26,7 @@ class xp_engine {
         }
 
         $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid],
-            'id, userid, course, uniqueid, state, timefinish',
+            'id, quiz, userid, uniqueid, state, timefinish, preview',
             IGNORE_MISSING
         );
         if (!$attempt) {
