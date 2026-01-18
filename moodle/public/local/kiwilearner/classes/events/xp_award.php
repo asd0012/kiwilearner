@@ -69,7 +69,7 @@ class xp_award {
 
         // Try to resolve attemptid (quiz attempt id).
         $attemptid = 0;
-        foreach (['attemptid', 'quizattemptid', 'quizattemptid'] as $k) {
+        foreach (['attemptid', 'quizattemptid'] as $k) {
             if (!empty($event->other[$k])) {
                 $attemptid = (int)$event->other[$k];
                 break;
