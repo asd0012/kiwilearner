@@ -21,6 +21,8 @@ class xp_engine {
     public static function award_participation_xp(int $userid, int $courseid, int $attemptid): void {
         global $DB;
 
+        error_log("KIWI XP award_participation_xp fire");
+
         if ($userid <= 0 || $courseid <= 0 || $attemptid <= 0) {
             return;
         }
@@ -29,6 +31,9 @@ class xp_engine {
             'id, quiz, userid, uniqueid, state, timefinish, preview',
             IGNORE_MISSING
         );
+
+        error_log("Get quiz attempts:". json_encode($attempt));
+
         if (!$attempt) {
             return;
         }
@@ -38,10 +43,13 @@ class xp_engine {
 
         // Only award when finished.
         if (empty($attempt->timefinish) || $attempt->state !== 'finished') {
+            error_log("Attempt not finished, cancel awarding.");
             return;
         }
 
         $usageid = (int)$attempt->uniqueid;
+        error_log("Get usage id:{$usageid}");
+
         if ($usageid <= 0) {
             return;
         }
@@ -51,12 +59,15 @@ class xp_engine {
         if (!$qas) {
             return;
         }
+        error_log("Get question attempts:". json_encode($qas));
+
 
         foreach ($qas as $qa) {
             $questionid = (int)$qa->questionid;
             if ($questionid <= 0) {
                 continue;
             }
+            error_log("Call apply_xp_for_event by question attempt:". json_encode($qa));
             self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'participation');
         }
     }
