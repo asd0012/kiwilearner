@@ -122,10 +122,26 @@ class xp_engine {
                 return false;
             }
 
-            $cfg = $DB->get_record('local_kiwilearner_question_xp', [
-                'questionid' => (int)$questionid,
-                'courseid'   => (int)$courseid,
-            ], '*', IGNORE_MISSING);
+            // get record from question_xp table
+            // right now, xp config load by questionid only
+
+            $cfgs = $DB->get_records('local_kiwilearner_question_xp',
+                ['questionid' => $questionid],
+                'timemodified DESC, id DESC',
+                '*',
+                0,
+                1
+            );
+            $cfg = $cfgs ? reset($cfgs) : null;
+            $count = $DB->count_records('local_kiwilearner_question_xp', ['questionid' => $questionid]);
+            if ($count > 1) {
+                error_log("[KIWI XP] Multiple config rows for questionid=$questionid; using newest.");
+            }
+
+            // $cfg = $DB->get_record('local_kiwilearner_question_xp', [
+            //     'questionid' => (int)$questionid,
+            //     'courseid'   => (int)$courseid,
+            // ], '*', IGNORE_MISSING);
 
             if (!$cfg) {
                 error_log("[KIWI XP] apply_xp_for_event: no config row questionid=$questionid courseid=$courseid");
@@ -194,9 +210,18 @@ class xp_engine {
         int $userid,
         int $courseid,
         string $subcontentid,
-        int $xpdelta = 1
+        ?int $xpdelta = null
     ): bool {
         global $DB;
+        
+        // use default_xp_correct if xp delta is not provided
+        if ($xpdelta === null) {
+            $xpdelta = (int)get_config('local_kiwilearner', 'default_xp_correct') ?: 1;
+
+            if ($xpdelta <= 0) {
+                $xpdelta = 1;
+            }
+        }
 
         $subcontentid = trim($subcontentid);
         if ($userid <= 0 || $courseid <= 0 || $subcontentid === '' || $xpdelta === 0) {
