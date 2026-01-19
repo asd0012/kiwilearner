@@ -113,6 +113,11 @@ class xp_engine {
         // Determine XP.
         $xp = null;
 
+        $defaultpart = (int)get_config('local_kiwilearner', 'default_xp_participation') ?? 0;
+        $defaultcorrect = (int)get_config('local_kiwilearner', 'default_xp_correct') ?: 1;
+        $defaultenabled = (int)get_config('local_kiwilearner', 'default_xp_enabled');
+        $defaultenabled = ($defaultenabled === 0) ? 0 : 1;
+
         if ($xpoverride !== null) {
             $xp = (int)$xpoverride;
         } else {
@@ -143,17 +148,25 @@ class xp_engine {
             //     'courseid'   => (int)$courseid,
             // ], '*', IGNORE_MISSING);
 
+
             if (!$cfg) {
-                error_log("[KIWI XP] apply_xp_for_event: no config row questionid=$questionid courseid=$courseid");
-                return false;
-            }
-            if (empty($cfg->enabled)) {
-                error_log("[KIWI XP] apply_xp_for_event: config disabled questionid=$questionid courseid=$courseid");
-                return false;
+                if (!$defaultenabled) {
+                    error_log("[KIWI XP] apply_xp_for_event: no per-question config and defaults disabled questionid=$questionid courseid=$courseid");
+                    return false;
+                }
+                $xp = ($type === 'participation') ? $defaultpart : $defaultcorrect;
+                error_log("[KIWI XP] apply_xp_for_event: using DEFAULT xp=$xp (no config row) questionid=$questionid courseid=$courseid");
+
+            } else {
+                if (empty($cfg->enabled)) {
+                    error_log("[KIWI XP] apply_xp_for_event: config disabled questionid=$questionid courseid=$courseid");
+                    return false;
+                }
+                $xp = ($type === 'participation') ? (int)$cfg->xp_participation : (int)$cfg->xp_correct;
+                error_log("[KIWI XP] apply_xp_for_event: get xp=$xp");
+
             }
 
-            $xp = ($type === 'participation') ? (int)$cfg->xp_participation : (int)$cfg->xp_correct;
-            error_log("[KIWI XP] apply_xp_for_event: get xp=$xp");
         }
 
         if ((int)$xp === 0) {
