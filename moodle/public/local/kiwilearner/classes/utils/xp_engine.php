@@ -62,8 +62,8 @@ class xp_engine {
                 continue;
             }
             error_log("Call apply_xp_for_event by question attempt:". json_encode($qa));
-            $reason = 'quiz_question:' . $questionid;
-            self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'quiz_participation', $reason, );
+            $reason = 'quiz_question_participate:' . $questionid;
+            self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'quiz_participation', $reason, null, true);
         }
     }
 
@@ -78,8 +78,8 @@ class xp_engine {
         if ($grade <= 0) {
             return; // No XP if incorrect.
         }
-
-        self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'correct');
+        $reason = 'quiz_question_correct:' . $questionid;
+        self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'correct', $reason, null, true);
     }
 
     /**
@@ -98,7 +98,9 @@ class xp_engine {
         ?int $attemptid,
         string $type,
         ?string $reasonoverride = null,
-        ?int $xpoverride = null
+        ?int $xpoverride = null,
+        bool $onceperday = false,
+        ?int $ts = null
     ): bool {
         global $DB;
 
@@ -113,10 +115,10 @@ class xp_engine {
         // Determine XP.
         $xp = null;
 
-        $defaultpart = (int)get_config('local_kiwilearner', 'default_xp_participation') ?? 0;
-        $defaultcorrect = (int)get_config('local_kiwilearner', 'default_xp_correct') ?: 1;
-        $defaultenabled = (int)get_config('local_kiwilearner', 'default_xp_enabled');
-        $defaultenabled = ($defaultenabled === 0) ? 0 : 1;
+        $defaultpart = (int)(get_config('local_kiwilearner', 'default_xp_participation') ?? 0);
+        $defaultcorrect = (int)(get_config('local_kiwilearner', 'default_xp_correct') ?? 1);
+        $defaultenabled = (int)(get_config('local_kiwilearner', 'default_xp_enabled') ?? 1);
+        $defaultenabled = $defaultenabled ? 1 : 0;
 
         if ($xpoverride !== null) {
             $xp = (int)$xpoverride;
@@ -174,21 +176,34 @@ class xp_engine {
             return false;
         }
 
-        // Idempotency guard.
-        $already = $DB->record_exists('local_kiwilearner_xp_event', [
-            'userid'     => $userid,
-            'courseid'   => $courseid,
-            'questionid' => $questionid,
-            'attemptid'  => $attemptid,
-            'reason'     => $reason,
-        ]);
+        $now = $ts ?? time();
+
+        if ($onceperday) {
+            $daystart = self::daystart_for_user($userid, $now); // or site policy
+            $dayend   = $daystart + DAYSECS;
+
+            // Once-per-day guard: same user+course+reason within day window.
+            // reason carries questionid
+            $already = $DB->record_exists_select(
+                'local_kiwilearner_xp_event',
+                'userid = ? AND courseid = ? AND reason = ? AND timecreated >= ? AND timecreated < ?',
+                [$userid, $courseid, $reason, $daystart, $dayend]
+            );
+        } else {
+            // Your existing idempotency:
+            $already = $DB->record_exists('local_kiwilearner_xp_event', [
+                'userid'     => $userid,
+                'courseid'   => $courseid,
+                'questionid' => $questionid,
+                'attemptid'  => $attemptid,
+                'reason'     => $reason,
+            ]);
+        }
 
         if ($already) {
             error_log("[KIWI XP] apply_xp_for_event: already awarded reason=$reason questionid=$questionid attemptid=$attemptid");
             return false;
         }
-
-        $now = time();
 
         // Write ledger row.
         $DB->insert_record('local_kiwilearner_xp_event', (object)[
@@ -228,12 +243,8 @@ class xp_engine {
         global $DB;
         
         // use default_xp_correct if xp delta is not provided
-        if ($xpdelta === null) {
+        if ($xpdelta === null || $xpdelta <= 0) {
             $xpdelta = (int)get_config('local_kiwilearner', 'default_xp_correct') ?: 1;
-
-            if ($xpdelta <= 0) {
-                $xpdelta = 1;
-            }
         }
 
         $subcontentid = trim($subcontentid);
@@ -241,22 +252,7 @@ class xp_engine {
             return false;
         }
 
-        $now = time();
-        $daystart = usergetmidnight($now);
-        $dayend   = $daystart + DAYSECS;
-
         $reason = 'h5piv_correct:' . $subcontentid;
-
-        // Enforce once/day per user per interaction.
-        $exists = $DB->record_exists_select(
-            'local_kiwilearner_xp_event',
-            'userid = ? AND courseid = ? AND reason = ? AND timecreated >= ? AND timecreated < ?',
-            [$userid, $courseid, $reason, $daystart, $dayend]
-        );
-
-        if ($exists) {
-            return false;
-        }
 
         self::apply_xp_for_event(
             $userid,
@@ -265,7 +261,8 @@ class xp_engine {
             null,      // attemptid
             'h5piv',   // type label (not used)
             $reason,   // reasonoverride
-            $xpdelta   // xpoverride
+            $xpdelta,   // xpoverride
+            true
         );
 
         return true;
@@ -278,7 +275,7 @@ class xp_engine {
     private static function update_daily_summary(int $userid, int $courseid, int $xp, int $now): void {
         global $DB;
 
-        $daystart = usergetmidnight($now);
+        $daystart = self::daystart_for_user($userid, $now);
 
         $existing = $DB->get_record('local_kiwilearner_xp_summary_day', [
             'userid'   => $userid,
@@ -301,4 +298,32 @@ class xp_engine {
             ]);
         }
     }
+
+    /**
+     * IMPORTANT:
+     * - timecreated is always stored as UTC timestamp
+     * - daystart is derived using USER timezone
+     * - Never mix site/user timezone within the same table
+     */
+    private static function daystart_for_user(int $userid, int $ts): int {
+        global $DB;
+
+        // Get the user's timezone (fallback to Moodle/site default).
+        $user = $DB->get_record('user', ['id' => $userid], 'id,timezone', MUST_EXIST);
+
+        // usergetmidnight can take a user object in most Moodle versions.
+        return usergetmidnight($ts, $user);
+    }
+
+    private static function daystart_for_site(int $ts): int {
+        $tzname = \core_date::get_server_timezone(); // site/server tz in Moodle terms
+        $tz = new \DateTimeZone($tzname);
+
+        $dt = new \DateTime('@' . $ts);
+        $dt->setTimezone($tz);
+        $dt->setTime(0, 0, 0);
+        return $dt->getTimestamp();
+    }
+
+
 }

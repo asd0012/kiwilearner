@@ -52,10 +52,10 @@ class question_fields_manager {
         }
 
         // 5. Ensure each field exists.
-        $defaultpart = (int)get_config('local_kiwilearner', 'default_xp_participation') ?? 0;
-        $defaultcorrect = (int)get_config('local_kiwilearner', 'default_xp_correct') ?: 1;
-        $defaultenabled = (int)get_config('local_kiwilearner', 'default_xp_enabled');
-        $defaultenabled = ($defaultenabled === 0) ? 0 : 1;
+        $defaultpart = (int)(get_config('local_kiwilearner', 'default_xp_participation') ?? 0);
+        $defaultcorrect = (int)(get_config('local_kiwilearner', 'default_xp_correct') ?? 1);
+        $defaultenabled = (int)(get_config('local_kiwilearner', 'default_xp_enabled') ?? 1);
+        $defaultenabled = $defaultenabled ? 1 : 0;
 
         if (!isset($existing[self::FIELD_XP_PARTICIPATION])) {
             self::create_number_field(
