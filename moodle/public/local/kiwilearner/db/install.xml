@@ -14,6 +14,9 @@
                 <FIELD NAME="xp_target"    TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="timecreated"  TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
                 <FIELD NAME="timemodified" TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+                <FIELD NAME="currentstreak" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="beststreak" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="laststreakdaystart" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
             </FIELDS>
 
             <KEYS>
@@ -80,6 +83,7 @@
 
             <INDEXES>
                 <INDEX NAME="user_course_idx" UNIQUE="false" FIELDS="userid, courseid" />
+                <INDEX NAME="uniq_dailyquiz_event" UNIQUE="true" FIELDS="userid,courseid,questionid,attemptid,reason"/>
                 <INDEX NAME="attemptid_idx"   UNIQUE="false" FIELDS="attemptid" />
             </INDEXES>
         </TABLE>
@@ -135,3 +139,4 @@
     </TABLES>
 
 </XMLDB>
+

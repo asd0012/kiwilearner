@@ -21,6 +21,7 @@
 
       <INDEXES>
         <INDEX NAME="userid_ix" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="uniq_dailyquiz_event" UNIQUE="true" FIELDS="userid,courseid,questionid,attemptid,reason"/>
         <INDEX NAME="questionid_ix" UNIQUE="false" FIELDS="questionid"/>
         <INDEX NAME="usercourse_day_ix" UNIQUE="false" FIELDS="userid,courseid,daykey"/>
       </INDEXES>

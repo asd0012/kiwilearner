@@ -192,6 +192,20 @@ class xp_engine {
         return true;
     }
 
+
+    public static function record_xp_event(
+        int $userid,
+        int $courseid,
+        int $daystart,
+        int $questionid,
+        int $attemptid,
+        string $reason,
+        string $source,
+        int $xpvalue
+    ): void {
+        self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, $reason, $source, $xpvalue, $daystart);
+    }
+
     /**
      * Update daily XP summary table.
      * Uses Moodle's user-midnight, not server timezone midnight.
@@ -221,5 +235,46 @@ class xp_engine {
                 'timemodified' => $now,
             ]);
         }
+    }
+    public static function record_dailyquiz_correct(
+        int $userid,
+        int $courseid,
+        int $questionid,
+        int $daystart,
+        int $xpvalue = 1
+    ): void {
+        global $DB;
+
+        if ($userid <= 0 || $courseid <= 0 || $questionid <= 0 || $daystart <= 0 || $xpvalue <= 0) {
+            return;
+        }
+
+        $attemptid = $daystart;
+        $reason = 'kiwilearner:dailyquiz_correct';
+
+        if ($DB->record_exists('local_kiwilearner_xp_event', [
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'questionid' => $questionid,
+            'attemptid' => $attemptid,
+            'reason' => $reason,
+        ])) {
+            return;
+        }
+
+        $now = time();
+
+        $DB->insert_record('local_kiwilearner_xp_event', (object)[
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'questionid' => $questionid,
+            'attemptid' => $attemptid,
+            'xpdelta' => $xpvalue,
+            'reason' => $reason,
+            'createdby' => null,
+            'timecreated' => $now,
+        ]);
+
+        self::update_daily_summary($userid, $courseid, $xpvalue, $now);
     }
 }
