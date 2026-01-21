@@ -44,3 +44,19 @@ $string['messageprovider:goalreminder'] = 'KiwiLearner daily goal reminders';
 $string['kiwi_xp_participation_xp'] = 'Kiwi XP – participation xp granted';
 $string['kiwi_xp_correct_xp'] = 'Kiwi XP – correct answer xp granted';
 $string['kiwi_xp_enabled'] = 'Enable Kiwi XP';
+
+// Kiwilearner default xp field for questions
+$string['default_xp_participation'] = 'Kiwi XP – default participation xp granted';
+$string['default_xp_correct'] = 'Kiwi XP – default correct answer xp granted';
+$string['default_xp_enabled'] = 'Default enable Kiwi XP';
+$string['default_xp_participation_desc'] =
+    'XP awarded when a learner participates in a question (for example, submitting or attempting it), '
+  . 'if no question-specific participation XP has been defined.';
+
+$string['default_xp_correct_desc'] =
+    'XP awarded for answering a question correctly, when no question-specific correct-answer XP has been defined. '
+  . 'This value is also used as the default for H5P interactions if no explicit XP value is provided.';
+
+$string['default_xp_enabled_desc'] =
+    'If enabled, XP awarding is turned on by default for new questions and interactions unless explicitly disabled '
+  . 'in the question settings.';
