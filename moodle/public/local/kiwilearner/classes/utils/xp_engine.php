@@ -63,7 +63,7 @@ class xp_engine {
             }
             error_log("Call apply_xp_for_event by question attempt:". json_encode($qa));
             $reason = 'quiz_question_participate:' . $questionid;
-            self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'quiz_participation', $reason, null, true);
+            self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'quiz_participation', $reason, null, true, null);
         }
     }
 
@@ -312,7 +312,6 @@ class xp_engine {
             ]);
         }
     }
-<<<<<<< moodle/public/local/kiwilearner/classes/utils/xp_engine.php
 
     /**
      * IMPORTANT:
