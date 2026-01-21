@@ -35,6 +35,7 @@ class xp_award {
             return;
         }
 
+        error_log('[KIWI XP] attempt_submitted fired: ' . json_encode($event->get_data()));
         xp_engine::award_participation_xp_for_quiz_attempts($userid, $courseid, $attemptid);
     }
 
@@ -50,8 +51,8 @@ class xp_award {
      *
      * @param \mod_quiz\event\attempt_graded $event
      */
-    public static function attempt_graded(\question\event\attempt_graded $event): void {
-        $attemptid = (int)$event->objectid; // quiz_ attempts.id
+    public static function attempt_graded(\mod_quiz\event\attempt_graded $event): void {
+        $attemptid = (int)$event->objectid; // quiz_attempts.id
         $userid    = (int)$event->userid;
         $courseid  = (int)$event->courseid;
 
@@ -59,6 +60,7 @@ class xp_award {
             return;
         }
 
+        error_log('[KIWI XP] attempt_graded fired: ' . json_encode($event->get_data()));
         xp_engine::award_correct_xp_for_quiz_attempt($userid, $courseid, $attemptid);
     }
 }

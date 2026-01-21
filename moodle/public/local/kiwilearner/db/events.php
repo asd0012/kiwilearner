@@ -27,7 +27,7 @@ $observers = [
 
     // NEW — Award XP for correctness.
     [
-        'eventname'   => '\question\event\attempt_graded',
+        'eventname'   => '\mod_quiz\event\attempt_graded',
         'callback'    => '\local_kiwilearner\events\xp_award::attempt_graded',
         'includefile' => '/local/kiwilearner/classes/events/xp_award.php',
         'priority'    => 200,

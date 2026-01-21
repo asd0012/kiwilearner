@@ -21,8 +21,6 @@ class xp_engine {
     public static function award_participation_xp_for_quiz_attempts(int $userid, int $courseid, int $attemptid): void {
         global $DB;
 
-        error_log("KIWI XP award_participation_xp_for_quiz_attempts fire");
-
         if ($userid <= 0 || $courseid <= 0 || $attemptid <= 0) {
             return;
         }
