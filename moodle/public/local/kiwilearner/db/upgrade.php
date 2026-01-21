@@ -194,8 +194,6 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026011901, 'local', 'kiwilearner');
     }
 
-<<<<<<< moodle/public/local/kiwilearner/db/upgrade.php
-=======
     // 2026-01-12 01: Add streak fields to goal table.
     if ($oldversion < 2026011201) {
         $table = new xmldb_table('local_kiwilearner_goal');
@@ -247,7 +245,6 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
 
         upgrade_plugin_savepoint(true, 2026011201, 'local', 'kiwilearner');
     }
->>>>>>> moodle/public/local/kiwilearner/db/upgrade.php
 
     return true;
 }
