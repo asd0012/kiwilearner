@@ -10,7 +10,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
     $dbman = $DB->get_manager();
 
     // 2025-12-03 – previous step you already had.
-    if ($oldversion < 2025120300) {
+    if ($oldversion < 2026012100) {
         $table = new xmldb_table('local_kiwilearner_goal');
 
         // 1) Add courseid column with default 0.
@@ -19,48 +19,17 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->add_field($table, $field);
         }
 
-        // 2) Drop old unique index on (userid, goal_type).
-        $oldindex = new xmldb_index('usegoa_uix', XMLDB_INDEX_UNIQUE, ['userid', 'goal_type']);
-        if ($dbman->index_exists($table, $oldindex)) {
-            $dbman->drop_index($table, $oldindex);
-        }
-
-        // 3) Add new unique index on (userid, courseid, goal_type).
-        $newindex = new xmldb_index('usercoursegoal_uix', XMLDB_INDEX_UNIQUE, ['userid', 'courseid', 'goal_type']);
-        if (!$dbman->index_exists($table, $newindex)) {
-            $dbman->add_index($table, $newindex);
-        }
-
-        upgrade_plugin_savepoint(true, 2025120300, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026012100, 'local', 'kiwilearner');
     }
 
     // 2025-12-10 02– switch to XP-only, per-course goals.
-    if ($oldversion < 2025121002) {
+    if ($oldversion < 2026012102) {
         $table = new xmldb_table('local_kiwilearner_goal');
 
-        // 1) Drop unique index that still references goal_type.
-        $oldindex = new xmldb_index('usercoursegoal_uix', XMLDB_INDEX_UNIQUE, ['userid', 'courseid', 'goal_type']);
+        $oldindex = new xmldb_index('usercoursegoal_uix', XMLDB_INDEX_UNIQUE, ['userid', 'courseid']);
         if ($dbman->index_exists($table, $oldindex)) {
             $dbman->drop_index($table, $oldindex);
         }
-
-        // 2) Drop goal_type column if it still exists.
-        $field = new xmldb_field('goal_type');
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->drop_field($table, $field);
-        }
-
-        // 3) Drop lesson_target column if it still exists.
-        $field = new xmldb_field('lesson_target');
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->drop_field($table, $field);
-        }
-
-		// Drop legacy goalxp column if it still exists.
-		$goalxpfield = new xmldb_field('goalxp');
-		if ($dbman->field_exists($table, $goalxpfield)) {
-			$dbman->drop_field($table, $goalxpfield);
-		}
 
         // 4) Ensure xp_target exists and is NOT NULL with a sensible default.
         $field = new xmldb_field('xp_target', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, 0, 'courseid');
@@ -80,19 +49,19 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->add_index($table, $newindex);
         }
 
-        upgrade_plugin_savepoint(true, 2025121002, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026012102, 'local', 'kiwilearner');
     }
 
     // 2025 12 13 02: Automatically add fields for question
-    if ($oldversion < 2025121303) {
+    if ($oldversion < 2026012107) {
         \local_kiwilearner\customfields\question_fields_manager::ensure_fields_exist();
 
         // Mark this upgrade step as successful.
-        upgrade_plugin_savepoint(true, 2025121303, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026012107, 'local', 'kiwilearner');
     }
 
     // 2025 12 13 01: seperate xpvalue to xp_participation/xp_correct
-    if ($oldversion < 2025121301) {
+    if ($oldversion < 2026012107) {
         $table = new xmldb_table('local_kiwilearner_question_xp');
 
         // 1) Add xp_participation (INT, NOT NULL, DEFAULT 0) if missing.
@@ -147,7 +116,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->drop_field($table, $xpvalue);
         }
 
-        upgrade_plugin_savepoint(true, 2025121301, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026012107, 'local', 'kiwilearner');
 
     }
 
@@ -195,7 +164,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
     }
 
     // 2026-01-12 01: Add streak fields to goal table.
-    if ($oldversion < 2026011201) {
+    if ($oldversion < 2026012107) {
         $table = new xmldb_table('local_kiwilearner_goal');
 
         // currentstreak
@@ -243,7 +212,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->add_field($table, $field);
         }
 
-        upgrade_plugin_savepoint(true, 2026011201, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026012107, 'local', 'kiwilearner');
     }
 
     // 2026-01-21 01: Seed global default XP settings if missing.
