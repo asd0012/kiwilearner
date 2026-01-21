@@ -37,6 +37,14 @@ if ($hassiteconfig) {
         1               // default checked
     ));
 
+    $settings->add(new admin_setting_configtext(
+        'local_kiwilearner/correct_fraction_threshold',
+        get_string('correct_fraction_threshold', 'local_kiwilearner'),
+        get_string('correct_fraction_threshold_desc', 'local_kiwilearner'),
+        '1.0',
+        PARAM_FLOAT
+    ));
+
     // Register the page.
     $ADMIN->add('localplugins', $settings);
 }
