@@ -246,5 +246,44 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026011201, 'local', 'kiwilearner');
     }
 
+    // 2026-01-21 01: Seed global default XP settings if missing.
+    if ($oldversion < 2026012103) {
+
+        // default_xp_participation
+        if (!$DB->record_exists('config_plugins', [
+            'plugin' => 'local_kiwilearner',
+            'name'   => 'default_xp_participation',
+        ])) {
+            set_config('default_xp_participation', '0', 'local_kiwilearner');
+        }
+
+        // default_xp_correct
+        if (!$DB->record_exists('config_plugins', [
+            'plugin' => 'local_kiwilearner',
+            'name'   => 'default_xp_correct',
+        ])) {
+            set_config('default_xp_correct', '1', 'local_kiwilearner');
+        }
+
+        // default_xp_enabled
+        if (!$DB->record_exists('config_plugins', [
+            'plugin' => 'local_kiwilearner',
+            'name'   => 'default_xp_enabled',
+        ])) {
+            set_config('default_xp_enabled', '1', 'local_kiwilearner');
+        }
+
+        // correct_fraction_threshold (1.0 = fully correct only)
+        if (!$DB->record_exists('config_plugins', [
+            'plugin' => 'local_kiwilearner',
+            'name'   => 'correct_fraction_threshold',
+        ])) {
+            set_config('correct_fraction_threshold', '1.0', 'local_kiwilearner');
+        }
+
+        upgrade_plugin_savepoint(true, 2026012103, 'local', 'kiwilearner');
+    }
+
+
     return true;
 }
