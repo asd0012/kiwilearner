@@ -63,5 +63,5 @@ $string['default_xp_enabled_desc'] =
 
 $string['correct_fraction_threshold'] = 'Correctness threshold (fraction)';
 $string['correct_fraction_threshold_desc'] =
-    'A question is considered correct if its final fraction is greater than or equal to this value (0.0–1.0). '
-  . 'Use 1.0 for fully correct only, or e.g. 0.5 to award for partial credit.';
+    'A question is considered correct if its final fraction is greater than or equal to this value (0.0–1). '
+  . 'Use 1 (rather than 1.0) for fully correct only, or e.g. 0.5 to award for partial credit.';

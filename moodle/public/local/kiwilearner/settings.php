@@ -41,7 +41,7 @@ if ($hassiteconfig) {
         'local_kiwilearner/correct_fraction_threshold',
         get_string('correct_fraction_threshold', 'local_kiwilearner'),
         get_string('correct_fraction_threshold_desc', 'local_kiwilearner'),
-        '1.0',
+        '1',
         PARAM_FLOAT
     ));
 
