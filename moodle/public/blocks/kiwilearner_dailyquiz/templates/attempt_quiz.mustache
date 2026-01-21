@@ -31,11 +31,65 @@
 <div class="card mt-3" id="kiwilearner_dailyquiz_summary">
   <div class="card-body">
     <h4 class="card-title">{{quizname}} — Summary</h4>
-    <p class="card-text">
-    	XP earned today: <strong>{{xp_earned}} / {{xp_target}}</strong>
-	{{#isunknown}}<span class="badge bg-secondary text-white ms-2">Pending</span>{{/isunknown}}
-    </p>
-    
+    <p class="card-text mb-2">
+      {{#is_goal_unknown}}
+        XP earned today: <strong>{{xp_earned}}</strong>
+      {{/is_goal_unknown}}
+      {{^is_goal_unknown}}
+        XP earned today: <strong>{{xp_earned}} / {{xp_target}}</strong>
+      {{/is_goal_unknown}}
+      
+      {{#isunknown}}<span class="badge bg-secondary text-white ms-2">Pending</span>{{/isunknown}}
+
+</p>
+
+{{#goalstatus_label}}
+<div class="mb-2">
+  <strong>Daily goal status:</strong>
+  <span class="badge bg-info text-dark ms-1">{{goalstatus_label}}</span>
+</div>
+{{/goalstatus_label}}
+
+{{#goal_daily_msg}}
+
+
+{{#is_goal_achieved}}
+<div class="alert alert-success py-3 mb-2 fs-6">
+  {{{goal_daily_msg}}}
+</div>
+{{/is_goal_achieved}}
+
+{{#is_goal_missed}}
+<div class="alert alert-warning py-3 mb-2 fs-6">
+  {{{goal_daily_msg}}}
+</div>
+{{/is_goal_missed}}
+
+{{#is_goal_unknown}}
+<div class="alert alert-secondary py-3 mb-2 fs-6">
+  {{{goal_daily_msg}}}
+</div>
+{{/is_goal_unknown}}
+{{/goal_daily_msg}}
+
+
+{{#currentstreak}}
+  <div class="mb-2">
+    <strong>Streak:</strong> {{currentstreak}} days 🔥
+  </div>
+{{/currentstreak}}
+{{^currentstreak}}
+  <div class="mb-2">
+    <strong>Streak:</strong> 0 days
+  </div>
+{{/currentstreak}}
+
+{{#streak_milestone_msg}}
+  <div class="alert alert-success py-3 mb-2 mt-2">
+    <div class="fw-semibold">{{streak_milestone_msg}}</div>
+  </div>
+{{/streak_milestone_msg}}
+
 <div class="mt-2 d-flex gap-2">
   {{#continueurl}}
     <a class="btn btn-primary btn-sm" href="{{continueurl}}">Next quiz</a>
