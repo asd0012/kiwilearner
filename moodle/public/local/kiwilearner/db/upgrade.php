@@ -247,7 +247,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
     }
 
     // 2026-01-21 01: Seed global default XP settings if missing.
-    if ($oldversion < 2026012103) {
+    if ($oldversion < 2026012120) {
 
         // default_xp_participation
         if (!$DB->record_exists('config_plugins', [
@@ -281,8 +281,30 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             set_config('correct_fraction_threshold', '1.0', 'local_kiwilearner');
         }
 
-        upgrade_plugin_savepoint(true, 2026012103, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026012120, 'local', 'kiwilearner');
     }
+
+    // Add unique index to prevent duplicate dailyquiz XP events.
+    if ($oldversion < 2026012121) {
+
+        $table = new xmldb_table('local_kiwilearner_xp_event');
+
+        // Must match the NAME and FIELDS you added in install.xml
+        $index = new xmldb_index(
+            'uniq_dailyquiz_event',
+            XMLDB_INDEX_UNIQUE,
+            ['userid', 'courseid', 'questionid', 'attemptid', 'reason']
+        );
+
+        // Create only if missing (safe on re-run).
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Mark upgrade savepoint.
+        upgrade_plugin_savepoint(true, 2026012121, 'local', 'kiwilearner');
+    }
+
 
 
     return true;
