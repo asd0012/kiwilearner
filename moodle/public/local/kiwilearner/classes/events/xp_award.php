@@ -35,62 +35,30 @@ class xp_award {
             return;
         }
 
-        xp_engine::award_participation_xp($userid, $courseid, $attemptid);
+        xp_engine::award_participation_xp_for_quiz_attempts($userid, $courseid, $attemptid);
     }
 
     /**
-     * Observer: \question\event\question_graded
+     * Observer: \mod_quiz\event\attempt_graded
      *
-     * Award correctness XP after a question is graded.
+     * Award correctness XP for each question in the attempt whose FINAL fraction
+     * meets your threshold (e.g. fraction >= 1.0).
      *
-     * NOTE: Moodle event payloads can vary by question engine / context.
-     * This method tries several common keys and bails out safely if it can't.
+     * IMPORTANT:
+     * - This event can fire multiple times (manual grading updates, regrades).
+     * - xp_engine::apply_xp_for_event idempotency must prevent double-awards.
      *
-     * @param \question\event\question_graded $event
+     * @param \mod_quiz\event\attempt_graded $event
      */
-    public static function question_graded(\question\event\question_graded $event): void {
-        $userid   = (int)$event->userid;
-        $courseid = (int)$event->courseid;
+    public static function attempt_graded(\question\event\attempt_graded $event): void {
+        $attemptid = (int)$event->objectid; // quiz_ attempts.id
+        $userid    = (int)$event->userid;
+        $courseid  = (int)$event->courseid;
 
-        if ($userid <= 0 || $courseid <= 0) {
+        if ($attemptid <= 0 || $userid <= 0 || $courseid <= 0) {
             return;
         }
 
-        // Try to resolve questionid.
-        $questionid = 0;
-        if (!empty($event->other['questionid'])) {
-            $questionid = (int)$event->other['questionid'];
-        } else if (!empty($event->other['question'])) {
-            $questionid = (int)$event->other['question'];
-        } else {
-            // Some events use objectid, but that may also be a questionattempt id.
-            $questionid = (int)$event->objectid;
-        }
-
-        // Try to resolve attemptid (quiz attempt id).
-        $attemptid = 0;
-        foreach (['attemptid', 'quizattemptid'] as $k) {
-            if (!empty($event->other[$k])) {
-                $attemptid = (int)$event->other[$k];
-                break;
-            }
-        }
-
-        // Grade/fraction: commonly available as "fraction" or "grade" in other[].
-        $grade = null;
-        foreach (['fraction', 'grade', 'mark'] as $k) {
-            if (isset($event->other[$k])) {
-                $grade = (float)$event->other[$k];
-                break;
-            }
-        }
-
-        if ($questionid <= 0 || $attemptid <= 0 || $grade === null) {
-            // If you want to debug: temporarily add debugging() / error_log here.
-            return;
-        }
-
-        xp_engine::award_correct_xp($userid, $courseid, $questionid, $attemptid, (float)$grade);
+        xp_engine::award_correct_xp_for_quiz_attempt($userid, $courseid, $attemptid);
     }
-
 }

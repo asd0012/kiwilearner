@@ -18,10 +18,10 @@ class xp_engine {
     /**
      * Award participation XP for each question in a submitted attempt.
      */
-    public static function award_participation_xp(int $userid, int $courseid, int $attemptid): void {
+    public static function award_participation_xp_for_quiz_attempts(int $userid, int $courseid, int $attemptid): void {
         global $DB;
 
-        error_log("KIWI XP award_participation_xp fire");
+        error_log("KIWI XP award_participation_xp_for_quiz_attempts fire");
 
         if ($userid <= 0 || $courseid <= 0 || $attemptid <= 0) {
             return;
@@ -63,24 +63,129 @@ class xp_engine {
             }
             error_log("Call apply_xp_for_event by question attempt:". json_encode($qa));
             $reason = 'quiz_question_participate:' . $questionid;
-            self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'quiz_participation', $reason, null, true, null);
+            self::apply_xp_for_event(
+                $userid,
+                $courseid,
+                $questionid,
+                $attemptid,
+                'quiz_participation',
+                $reason,
+                null,
+                true,
+                null
+            );
         }
     }
 
+
     /**
-     * Award XP for correctness after question_graded.
-     * $grade is usually 0..1 (fraction).
+     * Award "correct" XP for each question in a quiz attempt whose FINAL fraction
+     * meets the global threshold.
+     *
+     * Intended trigger: \mod_quiz\event\attempt_graded
+     *
+     * Uses question_attempt_steps to read the last step fraction for each question attempt.
      */
-    public static function award_correct_xp(int $userid, int $courseid, int $questionid, int $attemptid, float $grade): void {
-        if ($userid <= 0 || $courseid <= 0 || $questionid <= 0 || $attemptid <= 0) {
+    public static function award_correct_xp_for_quiz_attempt(int $userid, int $courseid, int $attemptid): void {
+        global $DB;
+
+        if ($userid <= 0 || $courseid <= 0 || $attemptid <= 0) {
             return;
         }
-        if ($grade <= 0) {
-            return; // No XP if incorrect.
+
+        // Threshold for "correct" (0.0 .. 1.0)
+        $threshold = get_config('local_kiwilearner', 'correct_fraction_threshold');
+        $threshold = ($threshold === null || $threshold === '') ? 1.0 : (float)$threshold;
+
+        if ($threshold < 0.0) {
+            $threshold = 0.0;
+        } else if ($threshold > 1.0) {
+            $threshold = 1.0;
         }
-        $reason = 'quiz_question_correct:' . $questionid;
-        self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, 'correct', $reason, null, true);
+
+        // Load the quiz attempt to get the usageid (questionusageid).
+        $attempt = $DB->get_record(
+            'quiz_attempts',
+            ['id' => $attemptid],
+            'id, userid, uniqueid, preview',
+            IGNORE_MISSING
+        );
+
+        if (!$attempt) {
+            return;
+        }
+        if ((int)$attempt->userid !== $userid) {
+            return;
+        }
+        // Skip teacher preview attempts.
+        if (!empty($attempt->preview)) {
+            return;
+        }
+
+        $usageid = (int)$attempt->uniqueid;
+        if ($usageid <= 0) {
+            return;
+        }
+
+        // Fetch each question attempt's final fraction in one query.
+        // We take the last step (max sequencenumber) for each questionattemptid.
+        $sql = "
+            SELECT
+                qa.id AS qaid,
+                qa.questionid AS questionid,
+                qas.fraction AS fraction
+            FROM {question_attempts} qa
+            JOIN (
+                SELECT questionattemptid, MAX(sequencenumber) AS maxseq
+                FROM {question_attempt_steps}
+                GROUP BY questionattemptid
+            ) last
+            ON last.questionattemptid = qa.id
+            JOIN {question_attempt_steps} qas
+            ON qas.questionattemptid = qa.id
+            AND qas.sequencenumber = last.maxseq
+            WHERE qa.questionusageid = :usageid
+        ";
+
+        $rows = $DB->get_records_sql($sql, ['usageid' => $usageid]);
+        if (!$rows) {
+            return;
+        }
+
+        foreach ($rows as $r) {
+            $questionid = (int)$r->questionid;
+            if ($questionid <= 0) {
+                continue;
+            }
+
+            // Fraction may be NULL for "gaveup"/incomplete.
+            if ($r->fraction === null) {
+                continue;
+            }
+
+            $fraction = (float)$r->fraction;
+            if ($fraction + 1e-9 < $threshold) {
+                continue;
+            }
+
+            // Award correct XP for this question in this attempt.
+            // Use a unique reason per question (and attemptid is included in idempotency).
+            $reason = 'quiz_question_correct:' . $questionid;
+
+            self::apply_xp_for_event(
+                $userid,
+                $courseid,
+                $questionid,
+                $attemptid,
+                'quiz_correct',   // any non-'participation' type uses correct XP in your apply_xp_for_event()
+                $reason,
+                null,
+                true,
+                null
+            );
+        }
     }
+
 
     /**
      * Insert XP ledger rows and update daily summaries.
@@ -150,13 +255,14 @@ class xp_engine {
             //     'courseid'   => (int)$courseid,
             // ], '*', IGNORE_MISSING);
 
+            $isparticipation = in_array($type, ['participation', 'quiz_participation'], true);
 
             if (!$cfg) {
                 if (!$defaultenabled) {
                     error_log("[KIWI XP] apply_xp_for_event: no per-question config and defaults disabled questionid=$questionid courseid=$courseid");
                     return false;
                 }
-                $xp = ($type === 'participation') ? $defaultpart : $defaultcorrect;
+                $xp = $isparticipation ? $defaultpart : $defaultcorrect;
                 error_log("[KIWI XP] apply_xp_for_event: using DEFAULT xp=$xp (no config row) questionid=$questionid courseid=$courseid");
 
             } else {
@@ -164,7 +270,7 @@ class xp_engine {
                     error_log("[KIWI XP] apply_xp_for_event: config disabled questionid=$questionid courseid=$courseid");
                     return false;
                 }
-                $xp = ($type === 'participation') ? (int)$cfg->xp_participation : (int)$cfg->xp_correct;
+                $xp = $isparticipation ? (int)$cfg->xp_participation : (int)$cfg->xp_correct;
                 error_log("[KIWI XP] apply_xp_for_event: get xp=$xp");
 
             }
@@ -190,7 +296,7 @@ class xp_engine {
                 [$userid, $courseid, $reason, $daystart, $dayend]
             );
         } else {
-            // Your existing idempotency:
+            // existing idempotency:
             $already = $DB->record_exists('local_kiwilearner_xp_event', [
                 'userid'     => $userid,
                 'courseid'   => $courseid,
@@ -254,7 +360,7 @@ class xp_engine {
 
         $reason = 'h5piv_correct:' . $subcontentid;
 
-        self::apply_xp_for_event(
+        return self::apply_xp_for_event(
             $userid,
             $courseid,
             null,      // questionid
@@ -264,22 +370,7 @@ class xp_engine {
             $xpdelta,   // xpoverride
             true
         );
-
-        return true;
-    }
-
-
-    public static function record_xp_event(
-        int $userid,
-        int $courseid,
-        int $daystart,
-        int $questionid,
-        int $attemptid,
-        string $reason,
-        string $source,
-        int $xpvalue
-    ): void {
-        self::apply_xp_for_event($userid, $courseid, $questionid, $attemptid, $reason, $source, $xpvalue, $daystart);
+        
     }
 
     /**
