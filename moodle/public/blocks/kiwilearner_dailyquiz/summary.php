@@ -52,6 +52,13 @@ $todaykey = block_kiwilearner_dailyquiz_daykey();
 $now = time();
 $daystart = usergetmidnight($now); // user-TZ midnight epoch
 
+$viewdaystart = $daystart; // default today
+if ($daykey !== $todaykey) {
+    $tz = \core_date::get_user_timezone($USER);
+    $dt = \DateTimeImmutable::createFromFormat('Ymd H:i:s', $daykey . ' 00:00:00', new \DateTimeZone($tz ?: 'UTC'));
+    $viewdaystart = $dt ? $dt->getTimestamp() : $daystart;
+}
+
 // Only update streak when viewing "today", otherwise you risk backfilling + messing current streak.
 if ($daykey === $todaykey) {
     // Keep local xp tables synced before streak calc (so xptotal is fresh).
@@ -71,7 +78,17 @@ if ($doemail) {
     require_sesskey();
 
     // Use the SAME daykey the page is showing (supports ?day=YYYYMMDD)
-    [$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+    // [$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+
+    [, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+
+    $sum = $DB->get_record('local_kiwilearner_xp_summary_day', [
+        'userid'   => $USER->id,
+        'courseid' => $courseid,
+        'daystart' => $viewdaystart,
+    ], 'xptotal', IGNORE_MISSING);
+
+    $todayxp = $sum ? (int)$sum->xptotal : 0;
 
     $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
     $coursename = format_string($course->fullname, true, ['context' => $context]);
@@ -167,14 +184,24 @@ foreach ($rows as $qid => $r) {
 }
 
 // ✅ source of truth for totals (same as course homepage)
-[$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
+// [$todayxp, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
 
-$daystart = usergetmidnight(time());
+[, $todaytotal] = block_kiwilearner_dailyquiz_get_today_totals_from_temp($USER->id, $courseid, $daykey);
 
-$todaykey = block_kiwilearner_dailyquiz_daykey();
-if ($daykey === $todaykey) {
-    local_kiwilearner_update_goal_streak($USER->id, $courseid, $daystart);
-}
+$sum = $DB->get_record('local_kiwilearner_xp_summary_day', [
+    'userid'   => $USER->id,
+    'courseid' => $courseid,
+    'daystart' => $viewdaystart,
+], 'xptotal', IGNORE_MISSING);
+
+$todayxp = $sum ? (int)$sum->xptotal : 0;
+
+// $daystart = usergetmidnight(time());
+
+// $todaykey = block_kiwilearner_dailyquiz_daykey();
+// if ($daykey === $todaykey) {
+//     local_kiwilearner_update_goal_streak($USER->id, $courseid, $daystart);
+// }
 
 
 
