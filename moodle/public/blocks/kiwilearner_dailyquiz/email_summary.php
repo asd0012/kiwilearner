@@ -4,28 +4,38 @@
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
-require_login();
+global $USER, $SESSION;
 
 $courseid = required_param('id', PARAM_INT);
-require_sesskey();
+require_login($courseid);
 
 $context = context_course::instance($courseid);
-require_capability('moodle/course:view', $context);
 
-// ✅ avoid $PAGE warnings / redirect被擋
+require_sesskey();
+if (!is_enrolled($context, $USER, '', true) && !is_siteadmin()) {
+    throw new required_capability_exception($context, 'moodle/course:participate', 'nopermissions', '');
+}
+
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php', ['id' => $courseid]));
 $PAGE->set_pagelayout('standard');
 
-global $USER, $SESSION;
-
-$returnurl = new moodle_url('/course/view.php', ['id' => $courseid]);
-
 // --------------------
 // 1) Prefer summary.php data (full day) from user preference
 // --------------------
-$daykey  = block_kiwilearner_dailyquiz_daykey();
+$dayparam = optional_param('daykey', '', PARAM_ALPHANUM);
+$daykey = (preg_match('/^\d{8}$/', $dayparam)) ? $dayparam : block_kiwilearner_dailyquiz_daykey();
+
+if (!preg_match('/^\d{8}$/', $daykey)) {
+    $daykey = block_kiwilearner_dailyquiz_daykey();
+}
+
 $prefkey = 'block_kiwilearner_dailyquiz_summary_' . (int)$courseid;
+
+$returnurl = new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', [
+    'id' => $courseid,
+    'day' => $daykey,
+]);
 
 $savedsummary = json_decode(get_user_preferences($prefkey, ''), true);
 if (!is_array($savedsummary) || (($savedsummary['daykey'] ?? '') !== $daykey)) {
@@ -72,10 +82,15 @@ $course = get_course($courseid);
 $quizname   = $summary['quizname'] ?? get_string('pluginname', 'block_kiwilearner_dailyquiz');
 $xpEarned   = (int)($summary['xp_earned'] ?? 0);
 $xpTarget   = (int)($summary['xp_target'] ?? 0);
-$dateStr    = userdate(time(), '%Y-%m-%d');
+$dt = \DateTime::createFromFormat('Ymd', $daykey);
+$dateStr = $dt ? $dt->format('Y-m-d') : userdate(time(), '%Y-%m-%d');
 $courseName = format_string($course->fullname);
 $courseUrl  = (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false);
-$summaryUrl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
+$summaryUrl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', [
+    'id' => $courseid,
+    'day' => $daykey,
+]))->out(false);
+
 
 // score (compute from items)
 $total = count($items);

@@ -62,7 +62,7 @@ if ($daykey === $todaykey) {
 }
 
 
-// $xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 0);
+$xptarget = block_kiwilearner_dailyquiz_get_xp_target($USER->id, $courseid, 0);
 
 // --- Handle "Email me this summary" POST (must run before any output) ---
 $doemail = optional_param('emailsummary', 0, PARAM_BOOL);
@@ -189,6 +189,13 @@ $currentstreak = $goal ? (int)$goal->currentstreak : 0;
 $beststreak    = $goal ? (int)$goal->beststreak : 0;
 
 // Goal status + daily message (always show something to reduce emptiness).
+
+$emailsummaryurl = (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php', [
+    'id' => $courseid,
+    'daykey' => $daykey,
+    'sesskey' => sesskey(),
+]))->out(false);
+
 $savedsummary['goalstatus_label'] = get_string('goalstatus_unknown', 'block_kiwilearner_dailyquiz');
 $savedsummary['is_goal_achieved'] = false;
 $savedsummary['is_goal_missed']   = false;
@@ -206,6 +213,7 @@ $savedsummary = [
     'isunknown'    => false,
     'currentstreak' => $currentstreak,
     'beststreak'    => $beststreak,
+    'emailsummaryurl' => $emailsummaryurl,
 
     // goal UI fields (default)
     'goalstatus_label' => '',

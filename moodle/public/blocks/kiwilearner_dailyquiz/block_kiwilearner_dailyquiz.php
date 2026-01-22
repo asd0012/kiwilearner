@@ -335,7 +335,13 @@ class block_kiwilearner_dailyquiz extends block_base
 					'incorrectcount' => count($attemptincorrectqids),
 					'courseid'       => (int)$courseid,
 					'sesskey'        => sesskey(),
-					'emailsummaryurl' => (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false),
+					// 'emailsummaryurl' => (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false),
+					'emailsummaryurl' => (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php', [
+						'id' => $courseid,      
+						'daykey' => $daykey,    
+						'sesskey' => sesskey(), 
+					]))->out(false),
+
 
 					'currentstreak' => $currentstreak,
 					'beststreak'    => $beststreak,
