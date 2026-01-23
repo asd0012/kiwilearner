@@ -261,7 +261,7 @@ class block_kiwilearner_dailyquiz extends block_base
 					'hasitems'       => ($todaytotal > 0),
 
 					'canreattempt' => $canreattempt,
-					'reattempturl' => $reattempturl,
+					// 'reattempturl' => $reattempturl,
 
 					'currentstreak' => $currentstreak,
 					'beststreak'    => $beststreak,
@@ -335,7 +335,13 @@ class block_kiwilearner_dailyquiz extends block_base
 					'incorrectcount' => count($attemptincorrectqids),
 					'courseid'       => (int)$courseid,
 					'sesskey'        => sesskey(),
-					'emailsummaryurl' => (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false),
+					// 'emailsummaryurl' => (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php'))->out(false),
+					'emailsummaryurl' => (new moodle_url('/blocks/kiwilearner_dailyquiz/email_summary.php', [
+						'id' => $courseid,      
+						'daykey' => $daykey,    
+						'sesskey' => sesskey(), 
+					]))->out(false),
+
 
 					'currentstreak' => $currentstreak,
 					'beststreak'    => $beststreak,
@@ -584,21 +590,41 @@ class block_kiwilearner_dailyquiz extends block_base
 			return $this->content;
 		}
 
+		// ===== XP banner (always computed early) =====
 		$summaryurl = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
 
-		if ($todaytotal > 0) {
-			$this->content->text .= html_writer::div(
-				'XP earned today: <strong>' . (int)$todayxp . ' / ' . (int)$xptarget . '</strong> ' .
-					html_writer::link($summaryurl, 'View today\'s summary', ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
-				'alert alert-info mt-2'
-			);
-		} else if (!empty($savedsummary)) {
-			$this->content->text .= html_writer::div(
-				'XP earned today: <strong>0 / 0</strong> ' .
-					html_writer::link($summaryurl, 'View today\'s summary', ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
-				'alert alert-info mt-2'
-			);
+		// IMPORTANT: pass $daystart (not 0) if your get_xp_target is day-based
+		$displayxp     = (int)$todayxp;
+		$displaytarget = (int)$xptarget;
+
+		// Fallback only when local has nothing
+		if ($displayxp <= 0 && $displaytarget <= 0 && !empty($savedsummary) && is_array($savedsummary)) {
+			$displayxp     = (int)($savedsummary['xp_earned'] ?? 0);
+			$displaytarget = (int)($savedsummary['xp_target'] ?? 0);
 		}
+
+		// If you want it to ALWAYS show even on first visit, don't gate it too hard:
+		$showxp = true;  // <- 這行就是關鍵：第一次進課程也會顯示 0/0 或 0/15
+
+		$this->content->text .= html_writer::div(
+			'XP earned today: <strong>' . $displayxp . ' / ' . $displaytarget . '</strong> ' .
+				html_writer::link($summaryurl, "View today's summary", ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
+			'alert alert-info mt-2'
+		);
+
+		// if ($todaytotal > 0) {
+		// 	$this->content->text .= html_writer::div(
+		// 		'XP earned today: <strong>' . (int)$todayxp . ' / ' . (int)$xptarget . '</strong> ' .
+		// 			html_writer::link($summaryurl, 'View today\'s summary', ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
+		// 		'alert alert-info mt-2'
+		// 	);
+		// } else if (!empty($savedsummary)) {
+		// 	$this->content->text .= html_writer::div(
+		// 		'XP earned today: <strong>0 / 0</strong> ' .
+		// 			html_writer::link($summaryurl, 'View today\'s summary', ['class' => 'btn btn-sm btn-outline-secondary ms-2']),
+		// 		'alert alert-info mt-2'
+		// 	);
+		// }
 
 
 		$this->content->text .= $mform->render();
