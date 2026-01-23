@@ -196,15 +196,6 @@ $sum = $DB->get_record('local_kiwilearner_xp_summary_day', [
 
 $todayxp = $sum ? (int)$sum->xptotal : 0;
 
-// $daystart = usergetmidnight(time());
-
-// $todaykey = block_kiwilearner_dailyquiz_daykey();
-// if ($daykey === $todaykey) {
-//     local_kiwilearner_update_goal_streak($USER->id, $courseid, $daystart);
-// }
-
-
-
 $goal = $DB->get_record('local_kiwilearner_goal', [
     'userid' => $USER->id,
     'courseid' => $courseid,

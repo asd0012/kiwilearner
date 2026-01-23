@@ -62,11 +62,11 @@ class xp_sync_helper {
             $shortname = $d->get_field()->get('shortname');
             $value = $d->get_value();
 
-            debugging(
-                '[KiwiLearner] xp_sync_helper: get_field:' . $shortname
-                .' get_value:' . $value,
-                DEBUG_DEVELOPER
-            );
+            // debugging(
+            //     '[KiwiLearner] xp_sync_helper: get_field:' . $shortname
+            //     .' get_value:' . $value,
+            //     DEBUG_DEVELOPER
+            // );
 
             if ($shortname === question_fields_manager::FIELD_XP_PARTICIPATION) {
                 if ($value !== null && $value !== '') {
@@ -88,14 +88,14 @@ class xp_sync_helper {
             }
         }
 
-        debugging(
-            '[KiwiLearner] xp_sync_helper: field result:'
-            . " xp_participation:". $result['xp_participation']
-            . " xp_correct:". $result['xp_correct']
-            . " enabled:". $result['enabled'],
-            DEBUG_DEVELOPER
-        );
-
+        // debugging(
+            // '[KiwiLearner] xp_sync_helper: field result:'
+            // . " xp_participation:". $result['xp_participation']
+            // . " xp_correct:". $result['xp_correct']
+            // . " enabled:". $result['enabled'],
+            // DEBUG_DEVELOPER
+        // );
+// 
         return $foundany ? $result : null;
     }
 
