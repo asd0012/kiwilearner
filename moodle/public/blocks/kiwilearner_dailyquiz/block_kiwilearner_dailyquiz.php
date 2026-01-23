@@ -261,7 +261,7 @@ class block_kiwilearner_dailyquiz extends block_base
 					'hasitems'       => ($todaytotal > 0),
 
 					'canreattempt' => $canreattempt,
-					'reattempturl' => $reattempturl,
+					// 'reattempturl' => $reattempturl,
 
 					'currentstreak' => $currentstreak,
 					'beststreak'    => $beststreak,

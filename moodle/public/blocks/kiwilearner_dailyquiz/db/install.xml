@@ -6,11 +6,12 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
         <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="attemptid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" UNSIGNED="true"/>
         <FIELD NAME="answer" TYPE="int" LENGTH="10" NOTNULL="true"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="daykey" TYPE="char" LENGTH="8" NOTNULL="true" DEFAULT=""/>
+        <FIELD NAME="daykey" TYPE="char" LENGTH="8" NOTNULL="true" DEFAULT="00000000"/>
       </FIELDS>
 
       <KEYS>
@@ -21,7 +22,6 @@
 
       <INDEXES>
         <INDEX NAME="userid_ix" UNIQUE="false" FIELDS="userid"/>
-        <INDEX NAME="uniq_dailyquiz_event" UNIQUE="true" FIELDS="userid,courseid,questionid,attemptid,reason"/>
         <INDEX NAME="questionid_ix" UNIQUE="false" FIELDS="questionid"/>
         <INDEX NAME="usercourse_day_ix" UNIQUE="false" FIELDS="userid,courseid,daykey"/>
       </INDEXES>
