@@ -52,11 +52,17 @@ class question_fields_manager {
         }
 
         // 5. Ensure each field exists.
+        $defaultpart = (int)(get_config('local_kiwilearner', 'default_xp_participation') ?? 0);
+        $defaultcorrect = (int)(get_config('local_kiwilearner', 'default_xp_correct') ?? 1);
+        $defaultenabled = (int)(get_config('local_kiwilearner', 'default_xp_enabled') ?? 1);
+        $defaultenabled = $defaultenabled ? 1 : 0;
+
         if (!isset($existing[self::FIELD_XP_PARTICIPATION])) {
             self::create_number_field(
                 $category,
                 self::FIELD_XP_PARTICIPATION,
-                get_string('kiwi_xp_participation_xp', 'local_kiwilearner')
+                get_string('kiwi_xp_participation_xp', 'local_kiwilearner'),
+                $defaultpart
             );
         }
 
@@ -64,7 +70,8 @@ class question_fields_manager {
             self::create_number_field(
                 $category,
                 self::FIELD_XP_CORRECT,
-                get_string('kiwi_xp_correct_xp', 'local_kiwilearner')
+                get_string('kiwi_xp_correct_xp', 'local_kiwilearner'),
+                $defaultcorrect
             );
         }
 
@@ -72,7 +79,8 @@ class question_fields_manager {
             self::create_checkbox_field(
                 $category,
                 self::FIELD_XP_ENABLED,
-                get_string('kiwi_xp_enabled', 'local_kiwilearner')
+                get_string('kiwi_xp_enabled', 'local_kiwilearner'),
+                $defaultenabled
             );
         }
     }
@@ -104,7 +112,8 @@ class question_fields_manager {
     protected static function create_number_field(
         category_controller $category,
         string $shortname,
-        string $name
+        string $name,
+        int $defaultvalue
     ): void {
         // 'number' here refers to the core customfield_number plugin. :contentReference[oaicite:8]{index=8}
         $field = field_controller::create(
@@ -118,8 +127,9 @@ class question_fields_manager {
         $field->set('description', '');
         $field->set('descriptionformat', FORMAT_HTML);
 
-        // Minimal configdata – no default value required.
         $configdata = new \stdClass();
+        // set default value for the field
+        $configdata->defaultvalue = $defaultvalue;
 
         api::save_field_configuration($field, $configdata); // :contentReference[oaicite:9]{index=9}
     }
@@ -130,7 +140,8 @@ class question_fields_manager {
     protected static function create_checkbox_field(
         category_controller $category,
         string $shortname,
-        string $name
+        string $name,
+        int $defaultvalue
     ): void {
         $field = field_controller::create(
             0,
@@ -145,7 +156,7 @@ class question_fields_manager {
 
         // TODO: For checkbox, default value could be set by admin.
         $configdata = (object)[
-            'checkbydefault' => 0,   
+            'defaultvalue' => $defaultvalue,   
         ];
         api::save_field_configuration($field, $configdata);
     }
