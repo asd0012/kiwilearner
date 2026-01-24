@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="blocks/kiwilearner_chatbot/db" VERSION="2026012400" COMMENT="KiwiLearner Chatbot tables"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+
+    <TABLES>
+        <TABLE NAME="block_kiwi_pdfsurvey" COMMENT="Stores per-user survey state/answers for a resource PDF">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+                <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+                <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+
+                <FIELD NAME="state" TYPE="char" LENGTH="40" NOTNULL="true" DEFAULT=""/>
+                <FIELD NAME="read_status" TYPE="char" LENGTH="10" NOTNULL="false" DEFAULT=""/>
+                <FIELD NAME="completion" TYPE="char" LENGTH="10" NOTNULL="false" DEFAULT=""/>
+
+                <FIELD NAME="about_text" TYPE="text" NOTNULL="false"/>
+                <FIELD NAME="takeaways_text" TYPE="text" NOTNULL="false"/>
+
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="uniq_user_cmid" TYPE="unique" FIELDS="userid,cmid"/>
+            </KEYS>
+
+            <INDEXES>
+                <INDEX NAME="idx_course_cmid" UNIQUE="false" FIELDS="courseid,cmid"/>
+            </INDEXES>
+        </TABLE>
+        <!--pdfcache: table to store pdf to text-->
+        <TABLE NAME="block_kiwi_pdfcache" COMMENT="Cached extracted text for PDF resource per cmid">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+                <FIELD NAME="contenthash" TYPE="char" LENGTH="40" NOTNULL="false"/>
+                <FIELD NAME="extractedtext" TYPE="text" NOTNULL="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="cmid_uk" TYPE="unique" FIELDS="cmid"/>
+            </KEYS>
+        </TABLE>
+    </TABLES>
+</XMLDB>
