@@ -566,6 +566,82 @@ class external extends external_api {
                 : json_encode($response);
             return ['ok' => true, 'feedback' => 'AI returned no readable text. response_data=' . $fallback];
         }
+        
+        // format the "AI returned feedback to look as pointers and list in chatbot
+        // Convert AI text into HTML formatted tutor report.
+        // --- Format AI feedback nicely as HTML (no <br> inside <ul>) ---
+        $raw = trim((string)$feedback);
+
+        // Normalize line endings
+        $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+
+        // If the model returned literal "\n" (escaped), unescape them:
+        $raw = str_replace(["\\n", "\\t"], ["\n", "\t"], $raw);
+
+        $lines = array_map('trim', explode("\n", $raw));
+
+        $html = '';
+        $section = 0;
+
+        $openList = function() use (&$html) {
+            $html .= "<ul>";
+        };
+        $closeList = function() use (&$html) {
+            $html .= "</ul>";
+        };
+
+        $listOpen = false;
+
+        foreach ($lines as $line) {
+            if ($line === '') { continue; }
+
+            // Detect section headers like "1) Accuracy: 3"
+            if (preg_match('/^1\)\s*Accuracy\s*:?/i', $line)) {
+                if ($listOpen) { $closeList(); $listOpen = false; }
+                $html .= "<h4>" . htmlspecialchars($line, ENT_QUOTES) . "</h4>";
+                continue;
+            }
+            if (preg_match('/^2\)\s*Coverage\s*:?/i', $line)) {
+                if ($listOpen) { $closeList(); $listOpen = false; }
+                $html .= "<h4>" . htmlspecialchars($line, ENT_QUOTES) . "</h4>";
+                continue;
+            }
+            if (preg_match('/^3\)\s*Missing key points\s*:?/i', $line)) {
+                if ($listOpen) { $closeList(); }
+                $html .= "<h4>3) Missing key points</h4>";
+                $openList(); $listOpen = true;
+                continue;
+            }
+            if (preg_match('/^4\)\s*Corrections\s*:?/i', $line)) {
+                if ($listOpen) { $closeList(); }
+                $html .= "<h4>4) Corrections</h4>";
+                $openList(); $listOpen = true;
+                continue;
+            }
+            if (preg_match('/^5\)\s*Suggestions/i', $line)) {
+                if ($listOpen) { $closeList(); }
+                $html .= "<h4>5) Suggestions to improve the takeaways</h4>";
+                $openList(); $listOpen = true;
+                continue;
+            }
+
+            // Bullet lines like "- something"
+            if (preg_match('/^-\s*(.+)$/', $line, $m)) {
+                if (!$listOpen) { $openList(); $listOpen = true; }
+                $html .= "<li>" . htmlspecialchars($m[1], ENT_QUOTES) . "</li>";
+                continue;
+            }
+
+            // Any other line: show as paragraph (outside list)
+            if ($listOpen) { $closeList(); $listOpen = false; }
+            $html .= "<p>" . htmlspecialchars($line, ENT_QUOTES) . "</p>";
+        }
+
+        if ($listOpen) { $closeList(); }
+
+        $feedback = $html;
+
+
 
         return ['ok' => true, 'feedback' => $feedback];
     }    
@@ -578,4 +654,120 @@ class external extends external_api {
             'feedback' => new external_value(PARAM_RAW, 'AI feedback'),
         ]);
     }
+
+    //functions to call moodle mail API
+    //parameters
+    public static function send_takeaways_to_tutor_parameters() {
+        return new \external_function_parameters([
+            'cmid' => new \external_value(PARAM_INT, 'Course module id'),
+            'feedback' => new \external_value(PARAM_RAW, 'AI feedback (html or text)'),
+        ]);
+    }
+
+    public static function send_takeaways_to_tutor($cmid, $feedback) {
+        global $DB, $USER;
+
+        $params = self::validate_parameters(self::send_takeaways_to_tutor_parameters(), [
+            'cmid' => $cmid,
+            'feedback' => $feedback,
+        ]);
+
+        $cm = get_coursemodule_from_id(null, (int)$params['cmid'], 0, false, MUST_EXIST);
+        $context = \context_module::instance($cm->id);
+        self::validate_context($context);
+        require_login($cm->course, false, $cm);
+
+        // Pull student survey data (same table you already use)
+        $survey = $DB->get_record('block_kiwi_pdfsurvey', [
+            'userid' => $USER->id,
+            'cmid'   => $cm->id,
+        ], '*', MUST_EXIST);
+
+        $about = trim((string)($survey->about_text ?? ''));
+        $takeaways = trim((string)($survey->takeaways_text ?? ''));
+
+        // Get course + module name for email context
+        $course = get_course($cm->course);
+        $modname = $cm->name ?? 'Resource';
+
+        // Find tutors/teachers for this course (editingteachers + teachers)
+        $recipients = self::get_course_tutors($course->id);
+        if (empty($recipients)) {
+            return ['ok' => false, 'message' => 'No tutor/teacher found for this course.'];
+        }
+
+        // Build email content
+        $studentname = fullname($USER);
+        $subject = "[Kiwilearner] Takeaways for {$modname} - {$studentname}";
+
+        // Convert feedback to plain text for email if needed
+        $feedbackhtml = (string)$params['feedback'];
+        $feedbacktext = html_to_text($feedbackhtml); // Moodle helper
+
+        $bodytext =
+            "Kia ora,\n\n" .
+            "Student: {$studentname}\n" .
+            "Course: {$course->fullname}\n" .
+            "Activity: {$modname}\n\n" .
+            "STUDENT SUMMARY:\n" . ($about !== '' ? $about : "[none]") . "\n\n" .
+            "STUDENT TAKEAWAYS:\n" . $takeaways . "\n\n" .
+            "AI FEEDBACK:\n" . $feedbacktext . "\n\n" .
+            "Sent via Kiwilearner.\n";
+
+        $bodyhtml =
+            "<p>Kia ora,</p>" .
+            "<p><b>Student:</b> " . s($studentname) . "<br>" .
+            "<b>Course:</b> " . s($course->fullname) . "<br>" .
+            "<b>Activity:</b> " . s($modname) . "</p>" .
+            "<h4>Student Summary</h4><p>" . format_text($about, FORMAT_PLAIN) . "</p>" .
+            "<h4>Student Takeaways</h4><p>" . format_text($takeaways, FORMAT_PLAIN) . "</p>" .
+            "<h4>AI Feedback</h4>" . $feedbackhtml .
+            "<p>Sent via Kiwilearner.</p>";
+
+        // Send email to each tutor
+        $support = \core_user::get_support_user();
+        $sentcount = 0;
+
+        foreach ($recipients as $tutor) {
+            if (email_to_user($tutor, $support, $subject, $bodytext, $bodyhtml)) {
+                $sentcount++;
+            }
+        }
+
+        if ($sentcount === 0) {
+            return ['ok' => false, 'message' => 'Email could not be sent (check SMTP/outgoing mail config).'];
+        }
+
+        return ['ok' => true, 'message' => "Sent to {$sentcount} tutor(s)."];
+    }
+
+    public static function send_takeaways_to_tutor_returns() {
+        return new \external_single_structure([
+            'ok' => new \external_value(PARAM_BOOL, 'OK'),
+            'message' => new \external_value(PARAM_TEXT, 'Result message'),
+        ]);
+    }
+
+    private static function get_course_tutors(int $courseid): array {
+        $context = \context_course::instance($courseid);
+
+        // Try both roles (site may use one or the other)
+        $users = [];
+
+        $editing = get_role_users(3, $context, false, 'u.*'); // common: editingteacher roleid=3
+        $teacher = get_role_users(4, $context, false, 'u.*'); // common: teacher roleid=4
+
+        foreach ([$editing, $teacher] as $set) {
+            if (is_array($set)) {
+                foreach ($set as $u) {
+                    $users[$u->id] = $u;
+                }
+            }
+        }
+        return array_values($users);
+    }
+
+
+
+
 }

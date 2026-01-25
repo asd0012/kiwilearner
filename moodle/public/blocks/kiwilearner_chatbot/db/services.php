@@ -48,5 +48,14 @@ $functions = [
         'ajax'        => true,
     ],
 
+        'block_kiwilearner_chatbot_send_takeaways_to_tutor' => [
+        'classname'   => 'block_kiwilearner_chatbot\external',
+        'methodname'  => 'send_takeaways_to_tutor',
+        'description' => 'Email student takeaways + AI feedback to tutor/teacher',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+
+
 
 ];

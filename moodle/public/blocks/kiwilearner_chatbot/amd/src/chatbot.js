@@ -368,18 +368,28 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
                         return;
                     }
 
-                    if (choice === '2') {
-                        // Whatever your "send to tutor" flow is
-                        addMsg(
-                            $box,
-                            'Okay — I will prepare this to send to your tutor. ' +
-                            '(Next: confirm tutor email/details)',
-                            'bot'
-                        );                        // set another state if needed:
-                        // surveyState = 'send_to_tutor';
-                        // saveSurveyState();
+                    if (choice === '2' || choice === 'SEND' || choice === 'SEND TO TUTOR' || choice==='send')) {
+                        addMsg($box, '<i>Sending your takeaways and AI feedback to your tutor…</i>', 'bot');
+
+                        Ajax.call([{
+                            methodname: 'block_kiwilearner_chatbot_send_takeaways_to_tutor',
+                            args: {
+                                cmid: surveyData.cmid,
+                                feedbackhtml: fb   // this is the SAME fb you already displayed
+                            }
+                        }])[0].done(function(resp) {
+                            if (resp && resp.ok) {
+                                addMsg($box, '<b>✅ ' + resp.message + '</b>', 'bot');
+                            } else {
+                                addMsg($box, '<b>⚠️</b> ' + (resp ? resp.message : 'Failed to send email') + '</b>', 'bot');
+                            }
+                        }).fail(function(ex) {
+                            Notification.exception(ex);
+                        });
+
                         return;
                     }
+
 
                     if (choice === '3' || choice === 'STOP' || choice === 'RESET') {
                         // Clear and show initial greeting/cards again
@@ -458,7 +468,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
                             addMsg(
                                 $box,
                                 '<b>AI Feedback:</b><br>' +
-                                    escapeHtml(fb !== '' ? fb : 'No feedback returned (empty AI response).'),
+                                    (fb !== '' ? fb : 'No feedback returned (empty AI response).'),
                                 'bot'
                             );
 
