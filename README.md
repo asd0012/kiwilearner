@@ -39,6 +39,7 @@ KiwiLearner aims to:
   - Dashboard
   - Course pages
   - Individual learning resource pages
+- Evaluate student performance in summarizing course content and optionally inform tutors.
 
 
 ## Repository Structure
