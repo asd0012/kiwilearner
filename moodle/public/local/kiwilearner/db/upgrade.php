@@ -10,7 +10,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
     $dbman = $DB->get_manager();
 
     // 2025-12-03 – previous step you already had.
-    if ($oldversion < 2026012100) {
+    if ($oldversion < 2025120300) {
         $table = new xmldb_table('local_kiwilearner_goal');
 
         // 1) Add courseid column with default 0.
@@ -19,11 +19,11 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->add_field($table, $field);
         }
 
-        upgrade_plugin_savepoint(true, 2026012100, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2025120300, 'local', 'kiwilearner');
     }
 
     // 2025-12-10 02– switch to XP-only, per-course goals.
-    if ($oldversion < 2026012102) {
+    if ($oldversion < 2025121002) {
         $table = new xmldb_table('local_kiwilearner_goal');
 
         $oldindex = new xmldb_index('usercoursegoal_uix', XMLDB_INDEX_UNIQUE, ['userid', 'courseid']);
@@ -49,19 +49,19 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->add_index($table, $newindex);
         }
 
-        upgrade_plugin_savepoint(true, 2026012102, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2025121002, 'local', 'kiwilearner');
     }
 
-    // 2025 12 13 02: Automatically add fields for question
-    if ($oldversion < 2026012107) {
+    // 2025 12 13 01: Automatically add fields for question
+    if ($oldversion < 2026011301) {
         \local_kiwilearner\customfields\question_fields_manager::ensure_fields_exist();
 
         // Mark this upgrade step as successful.
-        upgrade_plugin_savepoint(true, 2026012107, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026011301, 'local', 'kiwilearner');
     }
 
-    // 2025 12 13 01: seperate xpvalue to xp_participation/xp_correct
-    if ($oldversion < 2026012107) {
+    // 2025 12 13 02: seperate xpvalue to xp_participation/xp_correct
+    if ($oldversion < 2026011302) {
         $table = new xmldb_table('local_kiwilearner_question_xp');
 
         // 1) Add xp_participation (INT, NOT NULL, DEFAULT 0) if missing.
@@ -116,7 +116,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->drop_field($table, $xpvalue);
         }
 
-        upgrade_plugin_savepoint(true, 2026012107, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026011302, 'local', 'kiwilearner');
 
     }
 
@@ -164,7 +164,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
     }
 
     // 2026-01-12 01: Add streak fields to goal table.
-    if ($oldversion < 2026012107) {
+    if ($oldversion < 2026011201) {
         $table = new xmldb_table('local_kiwilearner_goal');
 
         // currentstreak
@@ -212,11 +212,11 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             $dbman->add_field($table, $field);
         }
 
-        upgrade_plugin_savepoint(true, 2026012107, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026011201, 'local', 'kiwilearner');
     }
 
     // 2026-01-21 01: Seed global default XP settings if missing.
-    if ($oldversion < 2026012120) {
+    if ($oldversion < 2026012101) {
 
         // default_xp_participation
         if (!$DB->record_exists('config_plugins', [
@@ -250,7 +250,7 @@ function xmldb_local_kiwilearner_upgrade(int $oldversion): bool {
             set_config('correct_fraction_threshold', '1.0', 'local_kiwilearner');
         }
 
-        upgrade_plugin_savepoint(true, 2026012120, 'local', 'kiwilearner');
+        upgrade_plugin_savepoint(true, 2026012101, 'local', 'kiwilearner');
     }
 
     // Add unique index to prevent duplicate dailyquiz XP events.
