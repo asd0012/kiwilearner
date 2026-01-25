@@ -249,6 +249,15 @@ class block_kiwilearner_dailyquiz extends block_base
 				$beststreak    = $goal ? (int)$goal->beststreak : 0;
 				// build INLINE summary (for course page right after submit)
 				// [$inlineitems, $attemptcorrect] = $build_items($attemptquetions);
+				$reattempturl = (new moodle_url('/course/view.php', [
+					'id' => $courseid,
+					'reattempt' => 1,
+					'sesskey' => sesskey(),
+				]))->out(false);
+
+				// incorrect qids for THIS attempt (matches what UI says)
+				$canreattempt = !empty($attemptincorrectqids);
+				$canreattempt = !empty($incorrectqids);
 
 				// store FULL DAY in preferences (so summary page can show everything)
 				$summarydata = [
@@ -261,7 +270,7 @@ class block_kiwilearner_dailyquiz extends block_base
 					'hasitems'       => ($todaytotal > 0),
 
 					'canreattempt' => $canreattempt,
-					// 'reattempturl' => $reattempturl,
+					'reattempturl' => $reattempturl,
 
 					'currentstreak' => $currentstreak,
 					'beststreak'    => $beststreak,
@@ -274,21 +283,9 @@ class block_kiwilearner_dailyquiz extends block_base
 
 				[$inlineitems, $attemptcorrect] = $build_items($attemptquestions);
 
-				// incorrect qids for THIS attempt (matches what UI says)
-				$canreattempt = !empty($attemptincorrectqids);
-
-
-				$canreattempt = !empty($incorrectqids);
-
 				// urls FIRST (so they exist)
 				$summaryurl  = (new moodle_url('/blocks/kiwilearner_dailyquiz/summary.php', ['id' => $courseid]))->out(false);
 				$continueurl = (new moodle_url('/course/view.php', ['id' => $courseid, 'newquiz' => 1]))->out(false);
-
-				$reattempturl = (new moodle_url('/course/view.php', [
-					'id' => $courseid,
-					'reattempt' => 1,
-					'sesskey' => sesskey(),
-				]))->out(false);
 
 
 				// after computing $incorrectqids:
