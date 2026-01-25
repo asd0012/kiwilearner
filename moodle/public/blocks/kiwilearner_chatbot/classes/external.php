@@ -517,6 +517,8 @@ class external extends external_api {
             if (is_array($data)) {
                 // Try likely keys in order.
                 $candidates = [
+                    'generatedcontent',      // <-- ADD THIS (your provider returns this)
+                    'generated_content',
                     'generatedtext',
                     'generated_text',
                     'content',
@@ -541,6 +543,14 @@ class external extends external_api {
                             $feedback = $data['data'][$k];
                             break;
                         }
+                    }
+                }
+
+                // Sometimes nested like OpenAI chat format:
+                if ($feedback === '' && isset($data['choices'][0]['message']['content'])) {
+                    $maybe = $data['choices'][0]['message']['content'];
+                    if (is_string($maybe) && trim($maybe) !== '') {
+                        $feedback = $maybe;
                     }
                 }
             } else if (is_string($data)) {
