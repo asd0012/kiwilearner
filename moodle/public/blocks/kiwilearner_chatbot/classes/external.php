@@ -498,19 +498,22 @@ class external extends external_api {
             return ['ok' => false, 'feedback' => trim($code . ' ' . $msg)];
         }
 
-        // 7) Extract the generated text from get_response_data().
         $feedback = '';
-        if (is_object($response) && method_exists($response, 'get_response_data')) {
-            $data = $response->get_response_data();
+        $data = $response->get_response_data();
 
-            // Log keys once (optional).
-            if (is_array($data)) {
-                error_log('KIWI AI: response_data keys=' . implode(',', array_keys($data)));
-            } else {
-                error_log('KIWI AI: response_data type=' . gettype($data));
-            }
+        /* SAFE DEBUG LOGGING — DO NOT CRASH */
+        if (is_array($data)) {
+            error_log('KIWI AI: response_data keys=' . implode(',', array_keys($data)));
+            error_log('KIWI AI: response_data json=' . substr(json_encode($data), 0, 1200));
+        } else if (is_object($data)) {
+            error_log('KIWI AI: response_data is object class=' . get_class($data));
+            error_log('KIWI AI: response_data json=' . substr(json_encode($data), 0, 1200));
+        } else {
+            error_log('KIWI AI: response_data type=' . gettype($data));
+            error_log('KIWI AI: response_data=' . substr((string)$data, 0, 1200));
+        }    
 
-            // Common key locations (provider-dependent).
+        // Common key locations (provider-dependent).
             if (is_array($data)) {
                 // Try likely keys in order.
                 $candidates = [
@@ -543,7 +546,7 @@ class external extends external_api {
             } else if (is_string($data)) {
                 $feedback = $data;
             }
-        }
+        
 
         $feedback = trim((string)$feedback);
         if ($feedback === '') {
@@ -555,7 +558,7 @@ class external extends external_api {
         }
 
         return ['ok' => true, 'feedback' => $feedback];
-    }
+    }    
 
 
 

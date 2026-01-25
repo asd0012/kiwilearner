@@ -35,6 +35,8 @@ moodle/blocks/**
 !moodle/public/mod/kiwivideo/
 !moodle/public/mod/kiwivideo/**
 !moodle/public/blocks/
+!moodle/public/blocks/kiwilearner_chatbot/
+!moodle/public/blocks/kiwilearner_chatbot/**
 !moodle/public/blocks/kiwilearner_dailyquiz/
 !moodle/public/blocks/kiwilearner_dailyquiz/**
 
