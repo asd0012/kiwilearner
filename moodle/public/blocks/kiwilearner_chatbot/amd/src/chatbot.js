@@ -18,6 +18,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
         about_text: '',
         takeaways_text: ''
     };
+    let lastAiFeedback = '';
         //helper functions for resource context
         /**
          * Check whether current page is a Moodle resource view page.
@@ -368,20 +369,25 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
                         return;
                     }
 
-                    if (choice === '2' || choice === 'SEND' || choice === 'SEND TO TUTOR' || choice==='send')) {
+                    if (choice === '2' || choice === 'SEND' || choice === 'SEND TO TUTOR' || choice==='send') {
                         addMsg($box, '<i>Sending your takeaways and AI feedback to your tutor…</i>', 'bot');
 
                         Ajax.call([{
                             methodname: 'block_kiwilearner_chatbot_send_takeaways_to_tutor',
                             args: {
                                 cmid: surveyData.cmid,
-                                feedbackhtml: fb   // this is the SAME fb you already displayed
+                                feedback: lastAiFeedback,   // this is the SAME fb you already displayed
                             }
                         }])[0].done(function(resp) {
                             if (resp && resp.ok) {
-                                addMsg($box, '<b>✅ ' + resp.message + '</b>', 'bot');
+                                addMsg($box, '<b>✅ ' + (resp.feedback || resp.message || 'Sent.') + '</b>', 'bot');
+
                             } else {
-                                addMsg($box, '<b>⚠️</b> ' + (resp ? resp.message : 'Failed to send email') + '</b>', 'bot');
+                                const msg = resp
+                                    ? (resp.feedback || resp.message || 'Failed to send email')
+                                    : 'Failed to send email';
+                                addMsg($box, '<b>⚠️</b> ' + msg, 'bot');
+
                             }
                         }).fail(function(ex) {
                             Notification.exception(ex);
@@ -463,6 +469,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
 
                         if (r && r.ok) {
                             const fb = (r.feedback || '').trim();
+                            lastAiFeedback=fb;
 
                             // ✅ 2) If feedback is empty, show a helpful message instead of blank/{}.
                             addMsg(

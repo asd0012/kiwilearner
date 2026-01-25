@@ -6,7 +6,7 @@ function xmldb_block_kiwilearner_chatbot_upgrade($oldversion) {
 
     $dbman = $DB->get_manager();
 
-    if ($oldversion < 2026012405) {
+    if ($oldversion < 2026012600) {
 
         $table = new xmldb_table('block_kiwi_pdfsurvey');
 
@@ -33,11 +33,11 @@ function xmldb_block_kiwilearner_chatbot_upgrade($oldversion) {
             $dbman->create_table($table);
         }
 
-        upgrade_block_savepoint(true, 2026012405, 'kiwilearner_chatbot');
+        upgrade_block_savepoint(true, 2026012600, 'kiwilearner_chatbot');
     }
 
     // Step 4.5: PDF cache table (PDF -> extracted text).
-    if ($oldversion < 2026012605) {
+    if ($oldversion < 2026012600) {
 
         $table = new xmldb_table('block_kiwi_pdfcache');
 
@@ -55,7 +55,7 @@ function xmldb_block_kiwilearner_chatbot_upgrade($oldversion) {
             $dbman->create_table($table);
         }
 
-        upgrade_block_savepoint(true, 2026012405, 'kiwilearner_chatbot');
+        upgrade_block_savepoint(true, 2026012600, 'kiwilearner_chatbot');
     }
 
     return true;

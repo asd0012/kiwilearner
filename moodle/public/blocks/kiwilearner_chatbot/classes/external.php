@@ -607,19 +607,19 @@ class external extends external_api {
                 continue;
             }
             if (preg_match('/^3\)\s*Missing key points\s*:?/i', $line)) {
-                if ($listOpen) { $closeList(); }
+                if ($listOpen) { $closeList(); $listOpen = false; }
                 $html .= "<h4>3) Missing key points</h4>";
                 $openList(); $listOpen = true;
                 continue;
             }
             if (preg_match('/^4\)\s*Corrections\s*:?/i', $line)) {
-                if ($listOpen) { $closeList(); }
+                if ($listOpen) { $closeList(); $listOpen = false; }
                 $html .= "<h4>4) Corrections</h4>";
                 $openList(); $listOpen = true;
                 continue;
             }
             if (preg_match('/^5\)\s*Suggestions/i', $line)) {
-                if ($listOpen) { $closeList(); }
+                if ($listOpen) { $closeList(); $listOpen = false; }
                 $html .= "<h4>5) Suggestions to improve the takeaways</h4>";
                 $openList(); $listOpen = true;
                 continue;
@@ -665,86 +665,141 @@ class external extends external_api {
     }
 
     public static function send_takeaways_to_tutor($cmid, $feedback) {
-        global $DB, $USER;
+        try {
+            global $DB, $USER;
 
-        $params = self::validate_parameters(self::send_takeaways_to_tutor_parameters(), [
-            'cmid' => $cmid,
-            'feedback' => $feedback,
-        ]);
+            error_log('KIWI MAIL: ENTER send_takeaways_to_tutor cmid=' . (int)$cmid);
 
-        $cm = get_coursemodule_from_id(null, (int)$params['cmid'], 0, false, MUST_EXIST);
-        $context = \context_module::instance($cm->id);
-        self::validate_context($context);
-        require_login($cm->course, false, $cm);
+            // 1) Validate params
+            $params = self::validate_parameters(self::send_takeaways_to_tutor_parameters(), [
+                'cmid' => $cmid,
+                'feedback' => $feedback,
+            ]);
 
-        // Pull student survey data (same table you already use)
-        $survey = $DB->get_record('block_kiwi_pdfsurvey', [
-            'userid' => $USER->id,
-            'cmid'   => $cm->id,
-        ], '*', MUST_EXIST);
+            // 2) Context + login
+            $cm = get_coursemodule_from_id(null, (int)$params['cmid'], 0, false, MUST_EXIST);
+            $context = \context_module::instance($cm->id);
+            self::validate_context($context);
+            require_login($cm->course, false, $cm);
 
-        $about = trim((string)($survey->about_text ?? ''));
-        $takeaways = trim((string)($survey->takeaways_text ?? ''));
+            // 3) Fetch student survey
+            $survey = $DB->get_record('block_kiwi_pdfsurvey', [
+                'userid' => $USER->id,
+                'cmid'   => $cm->id,
+            ], '*', IGNORE_MISSING);
 
-        // Get course + module name for email context
-        $course = get_course($cm->course);
-        $modname = $cm->name ?? 'Resource';
-
-        // Find tutors/teachers for this course (editingteachers + teachers)
-        $recipients = self::get_course_tutors($course->id);
-        if (empty($recipients)) {
-            return ['ok' => false, 'message' => 'No tutor/teacher found for this course.'];
-        }
-
-        // Build email content
-        $studentname = fullname($USER);
-        $subject = "[Kiwilearner] Takeaways for {$modname} - {$studentname}";
-
-        // Convert feedback to plain text for email if needed
-        $feedbackhtml = (string)$params['feedback'];
-        $feedbacktext = html_to_text($feedbackhtml); // Moodle helper
-
-        $bodytext =
-            "Kia ora,\n\n" .
-            "Student: {$studentname}\n" .
-            "Course: {$course->fullname}\n" .
-            "Activity: {$modname}\n\n" .
-            "STUDENT SUMMARY:\n" . ($about !== '' ? $about : "[none]") . "\n\n" .
-            "STUDENT TAKEAWAYS:\n" . $takeaways . "\n\n" .
-            "AI FEEDBACK:\n" . $feedbacktext . "\n\n" .
-            "Sent via Kiwilearner.\n";
-
-        $bodyhtml =
-            "<p>Kia ora,</p>" .
-            "<p><b>Student:</b> " . s($studentname) . "<br>" .
-            "<b>Course:</b> " . s($course->fullname) . "<br>" .
-            "<b>Activity:</b> " . s($modname) . "</p>" .
-            "<h4>Student Summary</h4><p>" . format_text($about, FORMAT_PLAIN) . "</p>" .
-            "<h4>Student Takeaways</h4><p>" . format_text($takeaways, FORMAT_PLAIN) . "</p>" .
-            "<h4>AI Feedback</h4>" . $feedbackhtml .
-            "<p>Sent via Kiwilearner.</p>";
-
-        // Send email to each tutor
-        $support = \core_user::get_support_user();
-        $sentcount = 0;
-
-        foreach ($recipients as $tutor) {
-            if (email_to_user($tutor, $support, $subject, $bodytext, $bodyhtml)) {
-                $sentcount++;
+            if (!$survey) {
+                error_log('KIWI MAIL: No survey record found for userid=' . (int)$USER->id . ' cmid=' . (int)$cm->id);
+                return ['ok' => false, 'feedback' => 'No survey data found. Please submit your summary/takeaways first.'];
             }
-        }
 
-        if ($sentcount === 0) {
-            return ['ok' => false, 'message' => 'Email could not be sent (check SMTP/outgoing mail config).'];
-        }
+            $about = trim((string)($survey->about_text ?? ''));
+            $takeaways = trim((string)($survey->takeaways_text ?? ''));
 
-        return ['ok' => true, 'message' => "Sent to {$sentcount} tutor(s)."];
+            if ($takeaways === '') {
+                error_log('KIWI MAIL: takeaways empty for userid=' . (int)$USER->id . ' cmid=' . (int)$cm->id);
+                return ['ok' => false, 'feedback' => 'No takeaways found to send. Please submit your takeaways first.'];
+            }
+
+            // 4) Course/module context
+            $course = get_course($cm->course);
+            $modname = $cm->name ?? 'Resource';
+
+            // 5) Find recipients (tutors/teachers)
+            $recipients = self::get_course_tutors((int)$course->id);
+
+            if (empty($recipients)) {
+                error_log('KIWI MAIL: No recipients found for courseid=' . (int)$course->id);
+                return ['ok' => false, 'feedback' => 'No tutor/teacher found for this course.'];
+            }
+
+            $emails = [];
+            foreach ($recipients as $u) {
+                $emails[] = ($u->email ?? '') . '(' . ($u->id ?? '') . ')';
+            }
+            error_log('KIWI MAIL: recipients=' . implode(', ', $emails));
+
+            // 6) Build email content
+            $studentname = fullname($USER);
+            $subject = "[Kiwilearner] Takeaways for {$modname} - {$studentname}";
+
+            $feedbackhtml = (string)$params['feedback'];
+
+            // Convert HTML -> text safely (html_to_text may not exist in some contexts)
+            if (function_exists('html_to_text')) {
+                $feedbacktext = (string)html_to_text($feedbackhtml);
+            } else {
+                // fallback
+                $feedbacktext = trim(preg_replace('/\s+/', ' ', strip_tags($feedbackhtml)));
+            }
+
+            $bodytext =
+                "Kia ora,\n\n" .
+                "Student: {$studentname}\n" .
+                "Course: {$course->fullname}\n" .
+                "Activity: {$modname}\n\n" .
+                "STUDENT SUMMARY:\n" . ($about !== '' ? $about : "[none]") . "\n\n" .
+                "STUDENT TAKEAWAYS:\n" . $takeaways . "\n\n" .
+                "AI FEEDBACK:\n" . $feedbacktext . "\n\n" .
+                "Sent via Kiwilearner.\n";
+
+            $bodyhtml =
+                "<p>Kia ora,</p>" .
+                "<p><b>Student:</b> " . s($studentname) . "<br>" .
+                "<b>Course:</b> " . s($course->fullname) . "<br>" .
+                "<b>Activity:</b> " . s($modname) . "</p>" .
+                "<h4>Student Summary</h4><p>" . format_text($about, FORMAT_PLAIN) . "</p>" .
+                "<h4>Student Takeaways</h4><p>" . format_text($takeaways, FORMAT_PLAIN) . "</p>" .
+                "<h4>AI Feedback</h4>" . $feedbackhtml .
+                "<p>Sent via Kiwilearner.</p>";
+
+            // 7) Send
+            $support = \core_user::get_support_user();
+            $sentcount = 0;
+            $failcount = 0;
+
+            foreach ($recipients as $tutor) {
+                $ok = false;
+                try {
+                    $ok = email_to_user($tutor, $support, $subject, $bodytext, $bodyhtml);
+                } catch (\Throwable $mailerr) {
+                    $ok = false;
+                    error_log('KIWI MAIL: email_to_user exception for tutorid=' . (int)$tutor->id . ': ' . $mailerr->getMessage());
+                }
+
+                if ($ok) {
+                    $sentcount++;
+                    error_log('KIWI MAIL: sent OK to tutorid=' . (int)$tutor->id . ' email=' . ($tutor->email ?? ''));
+                } else {
+                    $failcount++;
+                    error_log('KIWI MAIL: sent FAIL to tutorid=' . (int)$tutor->id . ' email=' . ($tutor->email ?? ''));
+                }
+            }
+
+            if ($sentcount === 0) {
+                error_log('KIWI MAIL: sentcount=0 failcount=' . (int)$failcount);
+                return ['ok' => false, 'feedback' => 'Email could not be sent (check SMTP/outgoing mail config / mailpit).'];
+            }
+
+            $msg = "Sent to {$sentcount} tutor(s).";
+            if ($failcount > 0) {
+                $msg .= " ({$failcount} failed)";
+            }
+
+            error_log('KIWI MAIL: RETURN ok=1 message=' . $msg);
+            return ['ok' => true, 'feedback' => $msg];
+
+        } catch (\Throwable $e) {
+            error_log('KIWI MAIL: EXCEPTION ' . $e->getMessage());
+            return ['ok' => false, 'feedback' => 'Send failed: ' . $e->getMessage()];
+        }
     }
+
 
     public static function send_takeaways_to_tutor_returns() {
         return new \external_single_structure([
             'ok' => new \external_value(PARAM_BOOL, 'OK'),
-            'message' => new \external_value(PARAM_TEXT, 'Result message'),
+            'feedback' => new \external_value(PARAM_RAW, 'Result message'),
         ]);
     }
 
