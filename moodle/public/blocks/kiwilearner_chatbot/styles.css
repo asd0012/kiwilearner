@@ -1,0 +1,104 @@
+
+.kiwi-chatbot-block {
+    text-align: center;
+}
+
+.kiwi-chatbot-launch {
+    width: 100%;
+}
+
+.kiwi-chatbot-window {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 350px;
+    max-height: 420px;
+    z-index: 9999;
+}
+
+.kiwi-chatbot-wrapper {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,.2);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.kiwi-chatbot-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+    background: #f6f6f6;
+}
+
+.kiwi-chatbot-messages {
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    font-size: 0.9rem;
+}
+
+.kiwi-chatbot-message {
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.kiwi-chatbot-message--bot {
+    background: #f1f1f1;
+    text-align: left;
+}
+
+.kiwi-chatbot-message--user {
+    background: #d9edf7;
+    text-align: right;
+}
+
+.kiwi-chatbot-input-area {
+    padding: 8px;
+    border-top: 1px solid #ddd;
+    flex: 0 0 auto;
+}
+
+/* Hide the standard block chrome so it doesn’t look like a normal block */
+.block_kiwilearner_chatbot .card-title {
+    display: none;
+}
+.block_kiwilearner_chatbot .card-body {
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+/* Root wrapper – doesn’t need layout */
+.kiwi-chatbot-root {
+    position: relative;
+}
+
+/* Floating round launcher button bottom-right */
+.kiwi-chatbot-launch {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    font-size: 26px;
+    background: #fff;
+    cursor: pointer;
+    z-index: 9998;
+}
+/*
+/* Floating chat window (already fixed over page) *
+.kiwi-chatbot-window {
+    position: fixed;
+    right: 20px;
+    bottom: 90px; /* Above the button *
+    width: 350px;
+    max-height: 420px;
+    z-index: 9999;
+}
+*/
+

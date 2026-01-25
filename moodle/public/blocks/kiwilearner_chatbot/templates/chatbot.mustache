@@ -1,0 +1,60 @@
+<div class="kiwi-chatbot">
+  <!-- Floating launcher -->
+  <button class="kiwi-chatbot-launch" aria-label="Open chatbot" type="button">
+    💬
+  </button>
+
+  <!-- Chat window -->
+  <div class="kiwi-chatbot-window d-none" data-courseid="{{courseid}}" data-cmid="{{cmid}}">
+    <div class="kiwi-chatbot-header">
+      <div class="kiwi-chatbot-title">Kiwilearner Assistant</div>
+      <button class="kiwi-chatbot-close" type="button" aria-label="Close">✕</button>
+    </div>
+
+    <div class="kiwi-chatbot-body" data-region="kiwi-chatbot-messages"></div>
+
+    <div class="kiwi-chatbot-footer">
+      <input class="kiwi-chatbot-input" type="text" placeholder="Type a message..." />
+      <button class="kiwi-chatbot-send" type="button">Send</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.kiwi-chatbot-launch{
+  position: fixed; right: 20px; bottom: 20px;
+  width: 52px; height: 52px; border-radius: 999px;
+  border: 1px solid #ddd; background: #fff; cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+  z-index: 999999;
+}
+.kiwi-chatbot-window{
+  position: fixed; right: 20px; bottom: 85px;
+  width: 340px; max-width: calc(100vw - 40px);
+  height: 460px; background: #fff; border: 1px solid #ddd;
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+  z-index:999999;
+  display:flex; flex-direction:column;
+}
+.kiwi-chatbot-header{
+  padding: 10px 12px; border-bottom: 1px solid #eee;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.kiwi-chatbot-title{ font-weight: 600; }
+.kiwi-chatbot-close{ border:0; background:transparent; cursor:pointer; font-size: 18px; }
+.kiwi-chatbot-body{
+  padding: 12px; overflow:auto; flex:1;
+  font-size: 14px; line-height: 1.35;
+}
+.kiwi-msg{ margin: 0 0 10px 0; }
+.kiwi-msg .meta{ font-size: 12px; opacity: .65; margin-bottom: 3px; }
+.kiwi-bubble{ padding: 10px 10px; border-radius: 12px; border:1px solid #eee; background:#fafafa; }
+.kiwi-msg.user .kiwi-bubble{ background:#eef6ff; border-color:#d6e9ff; }
+.kiwi-chatbot-footer{
+  padding: 10px; border-top: 1px solid #eee;
+  display:flex; gap:8px;
+}
+.kiwi-chatbot-input{ flex:1; padding: 8px 10px; border:1px solid #ddd; border-radius: 10px; }
+.kiwi-chatbot-send{ padding: 8px 12px; border:1px solid #ddd; border-radius: 10px; background:#fff; cursor:pointer; }
+</style>

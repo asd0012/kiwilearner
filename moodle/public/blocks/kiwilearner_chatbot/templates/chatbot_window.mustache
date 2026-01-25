@@ -1,0 +1,32 @@
+<div class="kiwi-chatbot-wrapper">
+    <div class="kiwi-chatbot-header d-flex justify-content-between align-items-center">
+        <div>
+            <strong>{{chat_title}}</strong><br>
+            <small>{{chat_subtitle}}</small>
+        </div>
+        <button type="button" class="close kiwi-chatbot-close" aria-label="Close" data-action="close-chatbot">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+
+    <div class="kiwi-chatbot-messages" data-region="kiwi-chatbot-messages">
+        {{#initialmessages}}
+            <div class="kiwi-chatbot-message kiwi-chatbot-message--bot">
+                {{{.}}}
+            </div>
+        {{/initialmessages}}
+    </div>
+
+    <form class="kiwi-chatbot-input-area" data-region="kiwi-chatbot-form">
+        <textarea class="form-control kiwi-chatbot-input"
+                  rows="2"
+                  placeholder="{{#str}} typeyourquestion, block_kiwilearner_chatbot {{/str}}"
+                  required></textarea>
+        <div class="kiwi-chatbot-actions d-flex justify-content-end mt-2">
+            <button type="submit" class="btn btn-primary"
+                    data-action="send-message">
+                {{#str}} send, block_kiwilearner_chatbot {{/str}}
+            </button>
+        </div>
+    </form>
+</div>

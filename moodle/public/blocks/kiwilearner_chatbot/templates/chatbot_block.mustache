@@ -1,0 +1,14 @@
+<div class="kiwi-chatbot-root" data-region="kiwi-chatbot-block">
+    <!-- Floating launcher button -->
+    <button class="kiwi-chatbot-launch"
+            type="button"
+            aria-label="{{#str}} openchatbot, block_kiwilearner_chatbot {{/str}}"
+            data-action="open-chatbot">
+        💬
+    </button>
+
+    <!-- Floating chat window (hidden by default) -->
+    <div class="kiwi-chatbot-window d-none" data-region="kiwi-chatbot-window">
+        {{> block_kiwilearner_chatbot/chatbot_window }}
+    </div>
+</div>
