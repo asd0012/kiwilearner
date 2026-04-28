@@ -303,12 +303,6 @@ To stop the environment without removing containers or volumes:
 make stop
 ```
 
-To start it again:
-
-```bash
-make start
-```
-
 For destructive cleanup, check the `clean` and `nuke` targets in the Makefile before running them, because they may remove containers, volumes, or local development data.
 
 ---
