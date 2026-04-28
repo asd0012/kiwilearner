@@ -130,7 +130,7 @@ I contributed to:
 * Duplicate XP prevention for repeated submissions or refreshes.
 * Database-backed debugging and verification.
 * PHPUnit-based checks for selected high-risk behaviours.
-* Makefile tooling for local development, backup, restore, and environment recovery.
+* A simple Makefile helper for creating development database backups before risky schema changes or integration testing.
 
 The project also required regular team communication, sprint planning, task breakdown, merge/review discussions, troubleshooting, and integration work across multiple Moodle plugins.
 
@@ -318,8 +318,12 @@ Suggested demo items:
 * Daily goal, goal status, and streak progress UI.
 * Reminder email workflow.
 
-Large demo videos should be uploaded through GitHub Releases or an external video link rather than committed directly into the repository.
 
+- [KiwiLearner Demo – XP, Daily Quiz, Summary and Email Features](https://www.youtube.com/watch?v=1hHtOZQtr3A)
+- [KiwiLearner Demo – Question XP Customisation and H5P Integration](https://www.youtube.com/watch?v=yhONCg86u6M)
+- [KiwiLearner Demo – Context-Aware Chatbot / Learning Support](https://www.youtube.com/watch?v=_YBsZnZs68E)
+
+These videos demonstrate selected prototype features from the KiwiLearner capstone project, including XP tracking, daily quiz workflows, summaries, email features, H5P-related integration, and context-aware Moodle support.
 ---
 
 ## Limitations and Future Work
