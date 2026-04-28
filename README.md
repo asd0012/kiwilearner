@@ -2,25 +2,29 @@
 
 # KiwiLearner
 
-**Moodle-based learning support plugins for daily learning engagement, XP tracking, goals, streaks, reminders, and context-aware student assistance.**
+**A Moodle-based learning engagement prototype that turns daily learning actions into visible progress through XP, goals, streaks, reminders, daily quizzes, summaries, and context-aware student support.**
 
-KiwiLearner was developed as a University of Canterbury capstone group project. The project explores how small, visible learning actions can help students stay engaged with course material through daily quizzes, progress feedback, gamified motivation, and lightweight support tools inside Moodle.
+KiwiLearner was developed as a University of Canterbury COSC680 capstone group project. The project explores how Moodle can provide more timely feedback and motivation for students by connecting daily practice activities with progress tracking, gamified feedback, and lightweight reminders.
 
-> Status: capstone prototype / development project. Some features are complete, while others remain experimental or planned future work.
+> **Status:** Capstone prototype / development project. The core daily learning loop was implemented and demonstrated, while some advanced analytics, video-alignment, and dashboard features remain future work.
 
 ---
 
 ## Table of Contents
 
 * [Overview](#overview)
+* [Problem and Motivation](#problem-and-motivation)
+* [Core Learning Loop](#core-learning-loop)
 * [Key Features](#key-features)
 * [My Contributions](#my-contributions)
 * [System Components](#system-components)
 * [Technology Stack](#technology-stack)
+* [Engineering Highlights](#engineering-highlights)
+* [Testing and Validation](#testing-and-validation)
+* [Exploratory Reminder Simulation](#exploratory-reminder-simulation)
 * [Repository Structure](#repository-structure)
 * [Getting Started](#getting-started)
 * [Running the Project](#running-the-project)
-* [Testing](#testing)
 * [Demo](#demo)
 * [Limitations and Future Work](#limitations-and-future-work)
 * [Acknowledgements](#acknowledgements)
@@ -29,96 +33,207 @@ KiwiLearner was developed as a University of Canterbury capstone group project. 
 
 ## Overview
 
-KiwiLearner is a set of custom Moodle plugins designed to support student engagement through a daily learning loop:
+KiwiLearner is a suite of custom Moodle plugins designed to improve student engagement by making daily learning progress easier to see, repeat, and act on.
 
-1. Students complete daily quiz or learning activities.
-2. The system awards XP for participation and correct answers.
-3. Daily progress is shown through goals, summaries, and streaks.
-4. Reminder emails encourage students to return before the end of the day.
-5. Context-aware support tools help students navigate learning tasks and course information.
+The project focuses on three engagement mechanisms:
 
-The project focuses on practical Moodle plugin development, database-backed progress tracking, student-facing UI, email workflows, and integration across multiple plugin components.
+* **Prompt** — reminder emails and chatbot-style support help students return to learning tasks.
+* **Practice** — daily quizzes and summaries provide low-friction retrieval practice.
+* **Motivate** — XP, daily goals, streaks, and progress summaries make small learning actions visible.
+
+Rather than replacing Moodle, KiwiLearner extends Moodle through custom local, block, and activity plugins.
+
+---
+
+## Problem and Motivation
+
+Learning Management Systems such as Moodle provide access to course resources, quizzes, and recorded lectures, but students can still struggle with day-to-day engagement. Standard LMS interactions often show whether a task was completed, but provide limited immediate feedback about progress, consistency, or how learning actions build over time.
+
+KiwiLearner addresses this by creating a daily learning loop where students complete small activities, receive XP, see goal and streak feedback, review a summary, and receive reminders when they have not yet met their target.
+
+---
+
+## Core Learning Loop
+
+```text
+Daily Quiz / Moodle Quiz / H5P activity
+        ↓
+XP event recording
+        ↓
+Daily XP summary
+        ↓
+Goal status + streak update
+        ↓
+Summary page / email summary / reminder email
+```
+
+The main design goal was to keep progress visible and consistent across different Moodle learning activities.
 
 ---
 
 ## Key Features
 
-### XP, Goals, and Streaks
+### XP, Daily Goals, and Streaks
 
-* Awards XP for selected learning activities.
-* Tracks daily XP progress per course.
-* Supports daily learning goals.
-* Tracks current and best streaks.
-* Uses an XP event ledger to reduce duplicate XP counting.
+* Records XP from supported learning activities.
+* Tracks daily XP totals per student and course.
+* Supports student daily XP goals.
+* Displays goal status such as Achieved, Missed, or Unknown.
+* Maintains streak progress when students meet their daily target.
+* Supports milestone-style streak messages.
 
 ### Daily Quiz Block
 
-* Provides a daily quiz workflow inside Moodle.
-* Supports question-bank-based daily practice.
-* Allows students to reattempt incorrect answers.
-* Shows daily quiz summaries and progress feedback.
-* Supports email summary functionality.
+* Generates daily quiz activities from Moodle question banks.
+* Supports student submission and progress feedback.
+* Allows reattempting incorrect questions.
+* Displays daily quiz summaries.
+* Provides an email summary option for students.
 
 ### Reminder Emails
 
-* Sends reminder-style nudges when students have not completed their daily goal.
-* Designed around scheduled reminder windows.
-* Helps students return to the daily quiz or learning task before the day ends.
+* Uses scheduled-task-style reminder logic.
+* Checks whether students have met their daily goal.
+* Sends reminder emails to students who have not completed their target.
+* Includes deduplication / rate-limit logic to reduce repeated reminder spam.
 
-### Context-Aware Learning Support
+### Context-Aware Chatbot Block
 
-* Includes a chatbot-style support component.
-* Surfaces course-related information such as upcoming deadlines and recent updates.
-* Explores context-aware assistance depending on where the student is inside Moodle.
+* Provides a student-facing chat interface inside Moodle.
+* Adapts basic responses based on Moodle page context.
+* Can surface course-related support such as deadlines and recent updates.
+* Explores PDF-based summary evaluation and tutor-forwarding workflows.
 
-### Interactive Video / H5P Exploration
+### Interactive Video / H5P Integration
 
-* Explores H5P / interactive video learning activities.
-* Investigates awarding XP from in-video questions or related learning interactions.
-* Intended to connect video-based engagement with the same XP and daily progress loop.
+* Integrates with Moodle H5P interactive video content.
+* Supports XP-related handling for in-video question interactions.
+* Uses H5P as the interactive video provider rather than modifying H5P source code.
+* Connects interactive video learning activity into the same daily XP loop.
 
 ---
 
 ## My Contributions
 
-This was a group capstone project. My main contributions focused on the XP, daily goal, streak, reminder, and Daily Quiz areas.
+This was a group capstone project. My main work focused on the XP, daily goal, streak, reminder, and Daily Quiz parts of the system.
 
-I worked on:
+I contributed to:
 
-* XP engine and database-backed XP event tracking.
-* Daily goal progress and streak logic.
+* XP engine and XP event tracking.
+* Daily goal setup and persistence.
+* Goal status calculation using daily XP totals.
+* Streak tracking and streak display logic.
 * Daily Quiz workflows and summary pages.
+* Reattempt flow for incorrect quiz answers.
 * Email summary functionality.
-* Reminder email logic and related testing.
-* Moodle plugin integration across the daily learning loop.
-* Preventing duplicate XP counting for repeated submissions.
-* Debugging, database checks, and PHPUnit-based testing for core behaviours.
+* Reminder email logic and scheduling behaviour.
+* Duplicate XP prevention for repeated submissions or refreshes.
+* Database-backed debugging and verification.
+* PHPUnit-based checks for selected high-risk behaviours.
+* Makefile tooling for local development, backup, restore, and environment recovery.
 
-The project also involved team communication, sprint planning, task breakdown, integration work, and coordination across multiple Moodle plugins.
+The project also required regular team communication, sprint planning, task breakdown, merge/review discussions, troubleshooting, and integration work across multiple Moodle plugins.
 
 ---
 
 ## System Components
 
-KiwiLearner is organised around several Moodle plugin components:
-
-| Component                     | Purpose                                                                     |
-| ----------------------------- | --------------------------------------------------------------------------- |
-| `local/kiwilearner`           | Core XP, daily goal, streak, and shared logic.                              |
-| `block/kiwilearner_dailyquiz` | Daily quiz workflow, reattempt flow, summaries, and email summary features. |
-| `block/kiwilearner_chatbot`   | Context-aware course assistance and student support UI.                     |
-| `mod/kiwivideo`               | Experimental video / H5P-related learning activity integration.             |
+| Component                     | Type                   | Purpose                                                                      |
+| ----------------------------- | ---------------------- | ---------------------------------------------------------------------------- |
+| `local/kiwilearner`           | Moodle local plugin    | Core XP framework, daily goals, streaks, shared logic, and event handling.   |
+| `block/kiwilearner_dailyquiz` | Moodle block plugin    | Daily quiz workflow, reattempt logic, summaries, and email summary features. |
+| `block/kiwilearner_chatbot`   | Moodle block plugin    | Context-aware student support and course assistance UI.                      |
+| `mod/kiwivideo`               | Moodle activity plugin | H5P / interactive video-related learning activity integration.               |
 
 ---
 
 ## Technology Stack
 
-* **Backend / Moodle:** PHP, Moodle plugin APIs
+* **Platform:** Moodle
+* **Backend:** PHP, Moodle plugin APIs
 * **Frontend:** JavaScript, Mustache templates, CSS / SCSS
 * **Database:** Moodle database APIs, SQL, MariaDB / MySQL-style development environment
-* **Development Environment:** Docker, Moodle Docker
-* **Testing:** PHPUnit, manual Moodle workflow testing
-* **Version Control:** Git, GitHub / GitLab-style workflow
+* **Environment:** Docker, Moodle Docker, Linux / WSL2-friendly workflow
+* **Testing:** Manual scenario testing, PHPUnit, database verification, Mailpit email testing
+* **Version Control:** Git, GitHub / GitLab-style feature-branch workflow
+
+---
+
+## Engineering Highlights
+
+### Idempotent XP Pipeline
+
+A major engineering concern was preventing duplicate XP when students refreshed pages, reattempted questions, or when sync logic was run more than once. The system uses stable daily identifiers and uniqueness-style checks so the same logical daily quiz event does not inflate XP repeatedly.
+
+### Daily Time Boundary Handling
+
+Daily features depend heavily on the definition of “today”. The project standardised daily identifiers such as day keys and day-start timestamps so summaries, reminders, and streak updates refer to the same daily bucket.
+
+### Single Source of Truth for Daily XP
+
+Earlier iterations produced inconsistent XP displays between the course block, summary page, and email summary. This was fixed by consolidating daily XP totals around a shared summary source so the UI and emails report consistent progress.
+
+### UI + Database Evidence Debugging
+
+Many bugs were diagnosed by checking both what the user saw in Moodle and what was stored in the database. This helped separate UI rendering issues from backend aggregation, persistence, or scheduled-task problems.
+
+### Database Backup Helper
+
+Because Moodle plugin development depends on persistent database state, I added a simple Makefile helper for creating development backups. This was mainly used as a safety net during local development, so the team could preserve a known database state before risky schema changes, resets, or integration testing.
+
+This was not a full production-grade backup and recovery system; it was a practical developer convenience for reducing the risk of losing local test data.
+
+---
+
+## Testing and Validation
+
+Testing was integrated throughout development instead of being left until the end. The main approach was acceptance-style manual testing through realistic Moodle user flows.
+
+Example tested flows:
+
+* Student sets a daily goal.
+* Student generates and submits a daily quiz.
+* Summary page shows correct / incorrect answers.
+* Incorrect questions can be reattempted.
+* XP is recorded and daily totals update correctly.
+* Goal status and streak values display correctly.
+* Summary email is sent and contains the correct daily progress.
+* Reminder email logic identifies students who have not met their target.
+
+Additional checks were added for high-risk behaviours:
+
+* Duplicate XP prevention.
+* Streak increment / reset / idempotency.
+* Daily XP sync correctness.
+* Daily rollover and day-key consistency.
+* Email delivery through local mail testing.
+
+---
+
+## Exploratory Reminder Simulation
+
+As part of the capstone evaluation, I ran a lightweight simulation to explore the research question:
+
+> Do reminder emails increase completion of a daily quiz task in a small-scale trial?
+
+This was not a production Moodle deployment or a fully controlled user study. Instead, I simulated the daily quiz and goal experience with Google Forms. Participants selected a daily goal / question count and completed short quiz tasks across several days. Reminder emails were sent manually to approximate the planned reminder workflow.
+
+Simulation design:
+
+* 4 participants
+* 6 days
+* Days 1–3: no manual reminder emails
+* Days 4–6: manual reminder emails
+* Completion counted when a participant submitted at least one quiz response for that day
+
+Summary result:
+
+| Condition              | Opportunities | Completed | Completion Rate |
+| ---------------------- | ------------: | --------: | --------------: |
+| No reminders           |            12 |         7 |           58.3% |
+| Manual reminder emails |            12 |         8 |           66.7% |
+
+The reminder period showed a small increase in completion rate, but this should only be treated as an exploratory simulation result. It does not prove that reminder emails caused higher completion. The result is limited by the small sample size, manual reminder process, fixed condition order, possible weekday/weekend effects, and likely participant awareness of being in a study.
 
 ---
 
@@ -144,14 +259,14 @@ The repository includes both the Moodle development environment and the KiwiLear
 
 ### Prerequisites
 
-Before running the project locally, install:
+Install:
 
 * Docker
 * Git
 * WSL2 if using Windows
-* A terminal environment suitable for running shell scripts
+* A terminal environment capable of running shell scripts and Makefile commands
 
-For Windows users, WSL2 is recommended so the project can be run in a Linux-like development environment.
+For Windows users, WSL2 is recommended so the project can run in a Linux-like environment.
 
 ---
 
@@ -182,28 +297,19 @@ The local Moodle site should then be available at:
 http://localhost:8000
 ```
 
-Default local development credentials may be configured by the setup script. Check the setup output and project configuration files if the login details differ.
-
-To stop the environment:
+To stop the environment without removing containers or volumes:
 
 ```bash
-make down
+make stop
 ```
 
----
+To start it again:
 
-## Testing
+```bash
+make start
+```
 
-The project includes PHPUnit-based testing for selected plugin behaviours.
-
-Example areas tested include:
-
-* XP event uniqueness and duplicate-prevention behaviour.
-* XP synchronisation from Daily Quiz activity.
-* Daily XP summary updates.
-* Goal and streak update logic.
-
-Typical Moodle PHPUnit commands depend on the local Moodle Docker setup and Moodle configuration. If PHPUnit is already configured, tests can be run from the Moodle root using the standard Moodle PHPUnit workflow.
+For destructive cleanup, check the `clean` and `nuke` targets in the Makefile before running them, because they may remove containers, volumes, or local development data.
 
 ---
 
@@ -215,29 +321,35 @@ Suggested demo items:
 
 * XP system, daily summary, and email summary workflow.
 * Question-level XP customisation and H5P-related learning activity integration.
-* Daily goal and streak progress UI.
+* Daily goal, goal status, and streak progress UI.
+* Reminder email workflow.
 
-If demo files are large, they should be uploaded through GitHub Releases or an external video link rather than committed directly into the repository.
+Large demo videos should be uploaded through GitHub Releases or an external video link rather than committed directly into the repository.
 
 ---
 
 ## Limitations and Future Work
 
-KiwiLearner is a capstone prototype, not a production-ready Moodle plugin package. Current limitations include:
+KiwiLearner is a capstone prototype, not a production-ready Moodle plugin package.
 
-* Some features were implemented as prototypes or development-only workflows.
-* Full LMS deployment and production hardening were outside the project scope.
-* Some AI / video-alignment ideas were explored but not fully completed.
-* Further usability testing with real course students would be needed.
-* More complete teacher dashboards, analytics, and behaviour logging could be added in future work.
+Known limitations:
 
-Possible future improvements:
+* Some workflows were built for demonstration and controlled testing rather than production deployment.
+* Goal reset behaviour still needs stronger integrity controls to prevent students from lowering the goal late in the day to preserve a streak.
+* Advanced segment-level video tagging and precise jump-to-segment remediation were not fully implemented.
+* Full behaviour logging for video interactions was deferred.
+* Instructor dashboards and analytics export were not delivered in the MVP.
+* Some chatbot and AI-related features remain experimental or limited in scope.
+
+Future improvements:
 
 * Cleaner plugin packaging for Moodle administrators.
-* More robust reminder scheduling and opt-out controls.
-* Expanded quiz question types and auto-generated practice activities.
+* Stronger goal-reset rules and audit logging.
+* More robust reminder preferences, rate limits, and opt-out controls.
+* Richer daily quiz generation using difficulty tags or content links.
 * Better dashboards for students and teachers.
-* Deeper integration between video learning activities, quiz attempts, XP, and feedback.
+* Deeper integration between quiz attempts, video resources, XP, summaries, and targeted feedback.
+* Broader automated test coverage for Moodle plugin behaviours.
 
 ---
 
@@ -245,11 +357,4 @@ Possible future improvements:
 
 This project was developed as part of the University of Canterbury COSC680 capstone project.
 
-KiwiLearner was a group project. My work focused mainly on the XP engine, daily goals, streak logic, reminders, Daily Quiz workflows, summaries, email summary features, testing, and Moodle plugin integration.
-
-2. Kiwi-backups folder will be created for your config files
-
-3. The timestamp will be the end of your config files in kiwi-backups folder.
-    e.g. moodle-2025-12-07_230101.sql
-4. Run **make restore STAMP=xxxx-xx-xx_xxxxxx** to restore your config.
-    e.g make restore STAMP=2025-12-07_230101
+KiwiLearner was a group project by Tsung-Te Huang, Yue Pan, and Najiya Pattanath Mullassery. My work focused mainly on the XP engine, daily goals, streak logic, reminders, Daily Quiz workflows, summaries, email summary features, testing, and Moodle plugin integration.
